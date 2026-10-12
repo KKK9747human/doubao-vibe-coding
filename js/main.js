@@ -851,7 +851,9 @@
 
     /* ---------- DOM ---------- */
     var cvs = $("nfCanvas");
-    var c2 = cvs.getContext("2d");
+    /* desynchronized：让浏览器走低延迟合成路径，按下到出画面的延迟更小 */
+    var c2 = cvs.getContext("2d", { desynchronized: true });
+    if (c2) c2.imageSmoothingEnabled = false;
     var elCache = {
       menu: $("nfMenu"),
       result: $("nfResult"),
@@ -898,7 +900,8 @@
       var r = elCache.arena.getBoundingClientRect();
       geo.w = Math.max(120, Math.round(r.width));
       geo.h = Math.max(200, Math.round(r.height));
-      geo.dpr = clamp(window.devicePixelRatio || 1, 1, quality >= 2 ? 2 : 1);
+      /* 2× DPR 在 1440p 屏上就是四倍像素要填，先保帧数：1.75× 看不出来 */
+      geo.dpr = clamp(window.devicePixelRatio || 1, 1, quality >= 2 ? 1.75 : 1.25);
       cvs.width = Math.round(geo.w * geo.dpr);
       cvs.height = Math.round(geo.h * geo.dpr);
       cvs.style.width = geo.w + "px";
@@ -984,6 +987,8 @@
     var sparks = [], rings = [], sparkPool = [];
     var MAX_SPARK = [40, 120, 260];
     var laneHold = [0, 0, 0, 0];
+    /* 打击感三件套：整屏抖动、轨道冲击条、全屏闪白。都是几帧就退的短命状态 */
+    var impactBars = [], shakeMag = 0, flashT = 0, flashCol = "0,229,255";
     var audioCtx = null, sfxGain = null;
 
     function ensureSfx() {
@@ -999,18 +1004,37 @@
       return audioCtx;
     }
 
-    /* 命中音：两个节点搞定，密集段落也不压音频线程 */
-    function sfx(freq, dur, vol, type) {
+    /* 命中音：一小段噪声给「敲下去」的瞬态，两个振荡器给音高；
+       连击越高音越亮，密集段落也就四个节点，压不住音频线程。 */
+    var noiseBuf = null;
+    function sfxHit(kind, combo) {
       var c = ensureSfx();
       if (!c) return;
       var t = c.currentTime;
-      var o = c.createOscillator(), g = c.createGain();
-      o.type = type || "triangle";
-      o.frequency.setValueAtTime(freq, t);
+      var base = kind === "perfect" ? 700 : kind === "good" ? 560 : 430;
+      var f = base * (1 + Math.min(combo || 0, 24) / 24 * 0.6);
+      var vol = kind === "perfect" ? 0.3 : kind === "good" ? 0.23 : 0.16;
+      var o = c.createOscillator(), o2 = c.createOscillator(), g = c.createGain();
+      o.type = "triangle";
+      o2.type = "sine";
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.05);
+      o2.frequency.setValueAtTime(f * 2.03, t); /* 轻微失谐，听着更脆 */
       g.gain.setValueAtTime(vol, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(sfxGain);
-      o.start(t); o.stop(t + dur + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+      o.connect(g); o2.connect(g); g.connect(sfxGain);
+      o.start(t); o2.start(t); o.stop(t + 0.16); o2.stop(t + 0.16);
+      if (!noiseBuf) {
+        noiseBuf = c.createBuffer(1, 420, c.sampleRate);
+        var d = noiseBuf.getChannelData(0);
+        for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      }
+      var n = c.createBufferSource(), ng = c.createGain();
+      n.buffer = noiseBuf;
+      ng.gain.setValueAtTime(vol * 0.45, t);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+      n.connect(ng); ng.connect(sfxGain);
+      n.start(t);
     }
 
     function pauseBg() {
@@ -1117,6 +1141,9 @@
       st = null;
       sparks.length = 0;
       rings.length = 0;
+      impactBars.length = 0;
+      shakeMag = 0;
+      flashT = 0;
       if (c2) c2.clearRect(0, 0, geo.w, geo.h);
     }
 
@@ -1167,6 +1194,7 @@
     }
 
     var lastFrame = 0, fpsCount = 0, fpsAt = 0, fpsShown = -1;
+    var hudSlowAt = 0, hudProgAt = 0;
 
     function loop(now) {
       if (!running) return;
@@ -1202,6 +1230,13 @@
     function draw(t, dt) {
       var notes = st.notes, lead = st.lead, i, n;
       c2.clearRect(0, 0, geo.w, geo.h);
+      /* 命中顿挫：让整个轨道抖一帧比加十颗粒子都直接，衰减压到 5 帧内 */
+      if (shakeMag) {
+        shakeMag *= Math.pow(0.82, dt / 16.7);
+        if (shakeMag < 0.15) shakeMag = 0;
+      }
+      c2.save();
+      if (shakeMag) c2.translate((Math.random() - 0.5) * 2 * shakeMag, (Math.random() - 0.5) * 2 * shakeMag);
 
       /* 按下的轨道光柱 */
       for (var l = 0; l < LANES; l++) {
@@ -1267,6 +1302,36 @@
       }
       c2.globalAlpha = 1;
 
+      /* 轨道冲击条：命中瞬间在判定线炸出一道横光，颜色跟着音色走 */
+      if (impactBars.length) {
+        c2.globalCompositeOperation = "lighter";
+        for (var b = impactBars.length - 1; b >= 0; b--) {
+          var ib = impactBars[b];
+          ib.p += dt / ib.life;
+          if (ib.p >= 1) { impactBars.splice(b, 1); continue; }
+          var e = 1 - ib.p, cx = laneX(ib.lane);
+          c2.fillStyle = ib.col;
+          c2.globalAlpha = e * 0.9;
+          var bw = geo.laneW * (0.45 + e * 0.65), bh = 2.5 + e * 5;
+          c2.fillRect(cx - bw / 2, geo.judgeY - bh / 2, bw, bh);
+          c2.globalAlpha = e * 0.22;
+          c2.fillRect(cx - geo.laneW / 2, geo.judgeY - 1, geo.laneW, 2);
+        }
+        c2.globalCompositeOperation = "source-over";
+        c2.globalAlpha = 1;
+      }
+
+      c2.restore();
+
+      /* 全屏闪光只给完美/重音，两帧就退，制造「打中了」的直觉 */
+      if (flashT > 0) {
+        flashT = Math.max(0, flashT - dt / 120);
+        c2.globalCompositeOperation = "lighter";
+        c2.fillStyle = "rgba(" + flashCol + "," + (flashT * 0.20).toFixed(3) + ")";
+        c2.fillRect(0, 0, geo.w, geo.h);
+        c2.globalCompositeOperation = "source-over";
+      }
+
       refreshHud(t);
       refreshLyric(t);
     }
@@ -1310,15 +1375,42 @@
       st.combo++;
       if (st.combo > st.maxCombo) st.maxCombo = st.combo;
       var mult = 1 + Math.min(st.combo, 60) / 120;
-      if (grade === "perfect") { st.score += Math.round(100 * mult); st.perfect++; sfx(880, 0.09, 0.22); }
-      else if (grade === "good") { st.score += Math.round(62 * mult); st.good++; sfx(660, 0.08, 0.18); }
-      else { st.score += Math.round(30 * mult); st.ok++; sfx(520, 0.06, 0.12, "sine"); }
+      /* 鼓点和重音给额外权重：敲在鼓上本来就该更值钱 */
+      var drum = best.band === "kick" || best.band === "snare";
+      var w = (best.acc ? 1.12 : 1) * (drum ? 1.1 : 1);
+      if (grade === "perfect") { st.score += Math.round(100 * mult * w); st.perfect++; }
+      else if (grade === "good") { st.score += Math.round(62 * mult * w); st.good++; }
+      else { st.score += Math.round(30 * mult * w); st.ok++; }
+      sfxHit(grade, st.combo);
       laneHold[lane] = 1;
       var col = grade === "perfect" ? "#00e5ff" : grade === "good" ? "#f2ede3" : "#7e8c9a";
       rings.push({ x: laneX(lane), p: 0, life: grade === "perfect" ? 230 : 180, col: col, big: false });
-      spawnSparks(laneX(lane), grade === "perfect" ? (quality === 2 ? 14 : 7) : 5);
-      if (st.combo % 50 === 0) rings.push({ x: laneX(lane), p: 0, life: 400, col: "#fcee0a", big: true });
+      /* 落点本身按音色发光：红/橙是鼓，紫是贝斯，白是扫弦，青是镲 */
+      impactBars.push({
+        lane: lane, p: 0, life: grade === "perfect" ? 200 : 150,
+        col: PALETTE[best.band] ? PALETTE[best.band][0] : "#00e5ff"
+      });
+      var heavy = grade === "perfect" && (drum || best.acc);
+      shakeMag = Math.max(shakeMag, heavy ? 5.6 : grade === "perfect" ? 3.4 : 1.8);
+      if (heavy) { flashCol = PALETTE[best.band] ? PALETTE[best.band][1] : "0,229,255"; flashT = 0.75; }
+      spawnSparks(laneX(lane), grade === "perfect" ? (drum ? (quality === 2 ? 16 : 8) : (quality === 2 ? 10 : 5)) : 4);
+      if (st.combo % 50 === 0) {
+        rings.push({ x: laneX(lane), p: 0, life: 400, col: "#fcee0a", big: true });
+        flashCol = "252,238,10";
+        flashT = 1;
+        shakeMag = Math.max(shakeMag, 4.5);
+      }
       showFeed(grade);
+      popEl(hudEls.combo);
+      if (grade !== "ok") popEl(hudEls.score);
+    }
+
+    /* 重新触发一次 CSS 弹出动画 */
+    function popEl(el) {
+      if (!el) return;
+      el.classList.remove("pop");
+      void el.offsetWidth;
+      el.classList.add("pop");
     }
 
     function missNote(n) {
@@ -1326,6 +1418,9 @@
       st.miss++;
       st.judged++;
       st.combo = 0;
+      shakeMag = Math.max(shakeMag, 2.4);
+      flashCol = "255,42,95";
+      flashT = Math.max(flashT, 0.5);
       showFeed("miss");
     }
 
@@ -1349,18 +1444,23 @@
     }
 
     function refreshHud(t) {
+      var now = performance.now();
       putHud("score", hudEls.score, st.score);
       putHud("combo", hudEls.combo, st.combo);
-      putHud("acc", hudEls.acc, accPct());
-      putHud("perf", hudEls.perf, st.perfect);
-      putHud("good", hudEls.good, st.good);
-      putHud("ok", hudEls.ok, st.ok);
-      putHud("miss", hudEls.miss, st.miss);
-      putHud("total", hudEls.total, st.judged + "/" + st.notes.length);
-      if (audio && audio.duration > 1) {
+      /* 命中率/计数/进度这种数字 10Hz、4Hz 刷就够；每帧写 DOM 会把帧预算吃掉 */
+      if (now - hudSlowAt >= 100) {
+        hudSlowAt = now;
+        putHud("acc", hudEls.acc, accPct());
+        putHud("perf", hudEls.perf, st.perfect);
+        putHud("good", hudEls.good, st.good);
+        putHud("ok", hudEls.ok, st.ok);
+        putHud("miss", hudEls.miss, st.miss);
+        putHud("total", hudEls.total, st.judged + "/" + st.notes.length);
+      }
+      if (audio && audio.duration > 1 && now - hudProgAt >= 250) {
+        hudProgAt = now;
         putHud("prog", hudEls.prog, Math.round(clamp(t / audio.duration, 0, 1) * 100) + "%");
       }
-      var now = performance.now();
       fpsCount++;
       if (!fpsAt) fpsAt = now;
       if (now - fpsAt >= 500) {

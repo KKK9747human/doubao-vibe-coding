@@ -991,3 +991,8 @@ html.nf-open .scrim,html.nf-open .glitch{animation-play-state:paused}
 .nf-seg button:last-child{border-right:0}
 .nf-seg button:hover{color:var(--paper)}
 .nf-seg button.on{background:var(--red);color:#07080d;box-shadow:0 0 18px rgba(255,42,95,.4)}
+/* 打击感：连击/分数被敲到时弹一下 */
+.nf-combo.pop{animation:comboPop .3s var(--ease)}
+@keyframes comboPop{0%{transform:scale(1)}38%{transform:scale(1.24)}100%{transform:scale(1)}}
+.nf-score.pop{animation:scorePop .22s var(--ease)}
+@keyframes scorePop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
