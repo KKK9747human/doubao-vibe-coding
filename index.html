@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=Orbitron:wght@600;900&family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 <!-- 背景是两段预渲染的无缝循环动图：
@@ -80,7 +80,7 @@
         </div>
         <div class="t-detail">
           <img class="no-filter" src="img/safetrace.webp" alt="SafeTrace 系统架构总图" loading="lazy">
-          <div class="td-text"><p>给安全工程师用的漏洞情报平台。输入一句自然语言问题，比如"Ollama 未授权访问漏洞影响我们哪些服务，今晚先修哪个"，系统自己去查漏洞库和文档，返回答案时会带上出处、推理链和修复优先级。</p><p>数据从 7 类情报源进来（NVD / CVE、cvelistV5、GitHub Advisory、OSV / KEV / EPSS、厂商公告、安全社区、arxiv），经 Y 线监测去重、F 线六维富化，建成知识底座，最后走 Q 线问答。</p><p>我负责问答线、TaskGraph 编排、MG1 模型网关和接口契约。TaskGraph 管着监测、富化、问答、自愈四个 Agent，支持挂起恢复；所有模型调用都从 MG1 走，业务代码里不允许直接 import 任何 provider，换模型只改配置。兜底设计了一个阶梯：工具 → 规则 → 本地模型 → 云模型 → 人工工单，每一级都记录在 trace 里，不允许静默失败。契约先行落了 8 个 JSON Schema 加 OpenAPI，4 个人并行开发没打过架。</p><p>实测数据：真实联网跑了 74.08 小时没断，新漏洞监测延迟 P95 是 4.99 小时，归并率 91.2%（71,712 条原始数据收敛成 6,314 条情报）。20 条黄金问答全部通过，没有证据的时候会明确拒答而不是编。全量单测 908 个，907 通过。</p></div>
+          <div class="td-text"><p>给安全工程师用的漏洞情报平台。你问一句"Ollama 未授权访问漏洞影响我们哪些服务，今晚先修哪个"，它自己去翻漏洞库和文档，答案带着出处和修复优先级回来。</p><p>数据从 7 类源进来，NVD、CVE、GitHub Advisory、OSV、KEV、EPSS、厂商公告，还有安全社区和 arxiv，中间走监测去重和六维富化，落到知识底座，最后接问答。</p><p>我负责问答线、TaskGraph 编排、MG1 模型网关和接口契约。TaskGraph 管监测、富化、问答、自愈四个 Agent，能挂起再恢复。所有模型调用都从 MG1 走，业务代码里不许直接 import 任何 provider，换模型只改配置。兜底留了个阶梯，工具、规则、本地模型、云模型、人工工单，每一级都记进 trace，不许悄悄失败。</p><p>真实联网跑了 74.08 小时没断过。新漏洞监测延迟 P95 是 4.99 小时，归并率 91.2%，七万多条原始数据收敛成 6,314 条情报。20 条黄金问答全过，没证据时会明确拒答，不编。全量单测 908 个，907 通过。</p></div>
         </div>
       </li>
       <li>
@@ -89,7 +89,7 @@
         </div>
         <div class="t-detail">
           <span class="td-ph">截图待补</span>
-          <div class="td-text"><p>把业务问题变成取数答案。流程是：检索相关的表，让大模型写出只读 SQL，做语法校验并限制行数，再执行。每一步都留 trace，答错了能查到是哪一步出的问题。</p><p>检索这块做了三级漏斗：先用词法召回一批候选表，让大模型精排，最后沿着外键把关联表一起带进来。SQL 安全上了两道锁，sqlglot 做 AST 只读校验并注入 LIMIT，DuckDB 本身也用只读方式打开。回答不了的时候会明确反问，区分是"没找到合适的表"还是"问题太含糊"，不会硬猜一个结果给你。</p><p>后端垂直切片已经跑通，约 73 个测试用例。TypeScript 编排层和前端还没做。</p></div>
+          <div class="td-text"><p>把业务问题变成取数答案。流程是：检索相关的表，让大模型写出只读 SQL，做语法校验并限制行数，再执行。每一步都留 trace，答错了能查到是哪一步出的问题。</p><p>检索这块做了三级漏斗，先用词法召回一批候选表，让大模型精排，最后沿着外键把关联表一起带进来。SQL 安全上了两道锁：sqlglot 做 AST 只读校验并注入 LIMIT，DuckDB 本身也用只读方式打开。答不出来的时候会明确反问，分清是"没找到合适的表"还是"问题太含糊"，不会硬猜一个结果给你。</p><p>后端垂直切片已经跑通，约 73 个测试用例。TypeScript 编排层和前端还没做。</p></div>
         </div>
       </li>
       <li>
@@ -98,7 +98,7 @@
         </div>
         <div class="t-detail">
           <img src="img/clear.png" alt="clear_image 截图" loading="lazy">
-          <div class="td-text"><p>本地跑 Real-ESRGAN 把模糊照片变清晰并放大，模型内置好了 69 MB，双击 启动.bat 自动装环境。</p><p>工程上的重点在推理后端抽象：同一套核心代码支持 OpenVINO 的 NPU / iGPU / CPU 和 onnxruntime 的 DirectML（走 RTX）四种后端，启动时自动挑一个能用的。图片是分块推理的，块与块之间用羽化过渡把接缝抹掉，另加逐档强度混合；倍率有 5 档（×1.5 到 ×4.0）。</p><p>GUI 支持单图和整文件夹批量，有进度显示，中途能取消。</p><p>待清理：app/core/config.py 里留了一个没被引用的明文 API Key，得删掉并处理 git 历史。</p></div>
+          <div class="td-text"><p>本地跑 Real-ESRGAN，把模糊照片变清晰再放大。模型内置好了 69 MB，双击 启动.bat 自动装环境。</p><p>工程上的重点在推理后端抽象。同一套核心代码支持 OpenVINO 的 NPU、iGPU、CPU，也支持 onnxruntime 的 DirectML 走 RTX，启动时自己挑一个能用的。图片是分块推理的，块与块之间用羽化过渡把接缝抹掉，另加逐档强度混合，倍率给了 5 档，从 ×1.5 到 ×4.0。</p><p>界面能处理单张，也能整文件夹批量，有进度，中途能取消。</p><p>有个事得记着：app/core/config.py 里躺着一个没被引用的明文 API Key，交之前要删掉，git 历史也得处理。</p></div>
         </div>
       </li>
       <li>
@@ -107,7 +107,7 @@
         </div>
         <div class="t-detail">
           <img src="img/mus1c.png" alt="Mus1c 界面截图" loading="lazy">
-          <div class="td-text"><p>一个单文件的 PyQt6 播放器，约 4000 行。能多线程扫盘建曲库（SQLite）、改歌曲元数据、异步加载封面、管歌单收藏、显示 .lrc 同步歌词和桌面悬浮歌词，还有黑胶详情页、可视化条和系统托盘。</p><p>最费劲的是桌面壁纸模式：把播放器自己画成 Windows 桌面壁纸，同时自动隐藏任务栏。后来做了个精修版（Mus1c-LiquidGlass），加了毛玻璃面板，并用 UpdateLayeredWindow 重写壁纸渲染，把 Win11 24H2 上的闪烁修掉了。</p><p>不联网。文件在哪，歌就在哪放。</p></div>
+          <div class="td-text"><p>一个单文件的 PyQt6 播放器，约四千行。能多线程扫盘建曲库，曲库落在 SQLite 里，还能改歌曲元数据、异步加载封面、管歌单和收藏、显示 .lrc 同步歌词和桌面悬浮歌词，黑胶详情页、可视化条、系统托盘都有。</p><p>最费劲的是桌面壁纸模式，把播放器自己画成 Windows 桌面壁纸，顺便把任务栏自动藏起来。后来做了个精修版 Mus1c-LiquidGlass，加了毛玻璃面板，再用 UpdateLayeredWindow 重写壁纸渲染，把 Win11 24H2 上的闪烁修掉了。</p><p>不联网。文件在哪，歌就在哪放。</p></div>
         </div>
       </li>
       <li>
@@ -116,7 +116,7 @@
         </div>
         <div class="t-detail">
           <img src="img/iconfly.png" alt="IconFly 截图" loading="lazy">
-          <div class="td-text"><p>让真实的桌面图标飞起来，互相碰撞，跟着鼠标和音乐动。做法是用 P/Invoke 跨进程读到 explorer 的 SysListView32，把每个图标的文本、位置和 shell 高清图标抠出来，再放飞。</p><p>做了 13 种运动模式（Bounce、Circle、Vortex、Gravity、Brownian、Pulse、Disco 等），图标之间是成对圆碰撞加弹性冲量。鼠标悬停能暂停，甩动能投掷，按住右键蓄力发射，双击直接运行原程序。</p><p>音频驱动走 WASAPI 回环加 FFT，图标跟着鼓点跳，响应曲线可以用鼠标拖。按 ESC 一键还原真实桌面，不会把你的桌面弄乱。</p><p>源码在 <a href="https://github.com/KKK9747human/IconFly" target="_blank" rel="noopener">github.com/KKK9747human/IconFly</a></p></div>
+          <div class="td-text"><p>让真实的桌面图标飞起来，互相碰撞，跟着鼠标和音乐动。做法是用 P/Invoke 跨进程读到 explorer 的 SysListView32，把每个图标的文本、位置和 shell 高清图标抠出来，再放飞。</p><p>运动模式做了 13 种，Bounce、Circle、Vortex、Gravity、Brownian、Pulse、Disco 这些都有。图标之间是成对圆碰撞加弹性冲量。鼠标悬停能暂停，甩动能投掷，按住右键蓄力发射，双击直接运行原程序。</p><p>音频驱动走 WASAPI 回环加 FFT，图标跟着鼓点跳，响应曲线可以用鼠标拖着改。按 ESC 一键还原真实桌面，不会把你的桌面弄乱。</p><p>源码在 <a href="https://github.com/KKK9747human/IconFly" target="_blank" rel="noopener">github.com/KKK9747human/IconFly</a></p></div>
         </div>
       </li>
       <li>
@@ -125,7 +125,7 @@
         </div>
         <div class="t-detail">
           <img src="img/modelmanager.png" alt="ModelManager 界面截图" loading="lazy">
-          <div class="td-text"><p>本机 ComfyUI 和 Ollama 的模型分散在好几个文件夹里，翻起来麻烦，就写了这个管理器统一管。左边按来源和分类建树，右边列表带类型、分类、大小、修改时间和完整路径，能按名称或路径搜，底下实时统计一共多少个模型、合计多少 GB。</p><p>模型从哪来这件事抽成了 ModelSource，想接新来源再写一个实现就行。删除做成回收站式，删错了能拿回来；停 Ollama 服务时按进程树清理，不留孤儿进程；服务状态每 3 秒自动刷一次。</p></div>
+          <div class="td-text"><p>本机 ComfyUI 和 Ollama 的模型散在好几个文件夹里，翻起来烦，就写了这个统一管。左边按来源和分类建树，右边列表带类型、分类、大小、修改时间和完整路径，能按名称或路径搜，底下实时统计一共多少个模型、合计多少 GB。</p><p>"模型从哪来"这件事抽成了 ModelSource，想接新来源再写一个实现就行。删除做成了回收站式，删错了能拿回来。停 Ollama 服务时按进程树清理，不留孤儿，服务状态每 3 秒刷一次。</p></div>
         </div>
       </li>
       <li>
@@ -143,7 +143,7 @@
         </div>
         <div class="t-detail">
           <img src="img/idleguard.png" alt="idle_guard 界面截图" loading="lazy">
-          <div class="td-text"><p>对付那些桌面上没窗口、托盘里没图标的进程。这类东西任务管理器里很难一眼挑出来，它按窗口状态和托盘这两个标签单独拎出来。</p><p>进程表有九列：窗口状态、平均 CPU、内存、累计 CPU 时间、PID、必要性分级、内存峰值和可执行文件路径。判定规则就写在列头上，平均 CPU 到 5% 标可疑，内存到 200MB 标无用，两个都占就叫可疑·无用；另有系统必要、系统组件、白名单三档做对照。选中的进程能一键加入或移出白名单，也能搜索、排序、打开文件位置、结束进程。</p><p>四个页面分别是隐藏进程检测、开机自启管理、服务管理、设置与日志。启动项和服务走注册表和 sc.exe、reg.exe，这里守一条线：所有破坏性操作都可逆。禁用启动项会先备份原注册表值，改服务启动类型也记下原值，随时能一键还原。采样在后台守护线程里跑，不碰 UI。</p></div>
+          <div class="td-text"><p>对付那些桌面上没窗口、托盘里没图标的进程。这类东西任务管理器里很难一眼挑出来，它按窗口状态和托盘这两个标签单独拎出来。</p><p>进程表有九列，窗口状态、平均 CPU、内存、累计 CPU 时间、PID、必要性分级、内存峰值、可执行文件路径。判定规则就写在列头上，平均 CPU 到 5% 标可疑，内存到 200MB 标无用，两个都占就叫可疑·无用。另有系统必要、系统组件、白名单三档做对照。选中的进程能一键加入或移出白名单，也能搜索、排序、打开文件位置、结束进程。</p><p>四个页面分别是隐藏进程检测、开机自启管理、服务管理、设置与日志。启动项和服务走注册表和 sc.exe、reg.exe，这里守一条线：破坏性操作都可逆。禁用启动项会先备份原注册表值，改服务启动类型也记下原值，随时能还原。采样在后台守护线程里跑，不碰界面。</p></div>
         </div>
       </li>
       <li>
@@ -499,12 +499,30 @@
         <div class="nf-stat"><span>帧率</span><b id="nfFps">–</b></div>
         <button class="nf-btn nf-btn-ghost" id="nfPause" type="button">⏸ 暂停 / 继续</button>
         <div class="nf-chartinfo" id="nfChartInfo">谱面准备中…</div>
-        <div class="nf-how">音符落进红线时按下对应键。<br>判定很宽容：跟上鼓点，踩住节奏就够。</div>
+        <div class="nf-how">音符落进红线时按下对应键，触屏直接点轨道。<br>红/橙是鼓点（最粗最亮）、紫是贝斯、白是吉他扫弦、青是镲；黄线的是小节重音。<br>ESC 暂停。</div>
       </div>
     </div>
     <div class="nf-menu" id="nfMenu">
       <div class="nf-menu-title">NEVER FADE AWAY</div>
-      <p class="nf-menu-sub">SAMURAI · 夜之城下行插件<br>听歌落点，只看节奏。让它在离开之前，被敲完。</p>
+      <p class="nf-menu-sub">SAMURAI · 夜之城下行插件<br>谱面按鼓点生成，让它在离开之前，被敲完。</p>
+      <div class="nf-opts">
+        <div class="nf-opt">
+          <span class="nf-opt-k">难度</span>
+          <div class="nf-seg" id="nfDiff">
+            <button type="button" data-v="easy">轻松</button>
+            <button type="button" data-v="normal">标准</button>
+            <button type="button" data-v="hard">狂暴</button>
+          </div>
+        </div>
+        <div class="nf-opt">
+          <span class="nf-opt-k">流速</span>
+          <div class="nf-seg" id="nfSpeed">
+            <button type="button" data-v="slow">慢</button>
+            <button type="button" data-v="mid">中</button>
+            <button type="button" data-v="fast">快</button>
+          </div>
+        </div>
+      </div>
       <button class="nf-btn" id="nfStart" type="button">▶ 开始 PLAY</button>
       <span class="nf-keys">D · F · J · K</span>
     </div>
@@ -522,6 +540,6 @@
     <button class="nf-close" id="nfClose" type="button" title="关闭">✕</button>
   </div>
 </div>
-<script src="js/main.js?v=3" defer></script>
+<script src="js/main.js?v=21" defer></script>
 </body>
 </html>

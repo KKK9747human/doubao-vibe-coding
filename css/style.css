@@ -498,12 +498,6 @@ html.js .screen.on.curtain .wipe{
 .tracks li:hover::after{transform:scaleX(1)}
 .tracks li:hover{color:var(--cyan)}
 .tracks .t-head{display:contents}
-/* 滚动判定用的不可见标记：负 margin 抵消 padding，完全不占布局 */
-.acc-mark{
-  display:block;height:0;
-  margin-top:-10px;padding-top:10px;
-  pointer-events:none;visibility:hidden;
-}
 .t-no{font-family:var(--mono);font-size:.78rem;color:var(--paper-dim);letter-spacing:.1em}
 .tracks b{font-size:1.02rem;font-weight:600;letter-spacing:.08em}
 .tracks i{font-style:normal;font-family:var(--mono);font-size:.7rem;color:var(--cyan);letter-spacing:.12em;opacity:.85}
@@ -981,3 +975,19 @@ html.nf-open #dust{display:none}
 html.nf-open video.bgwall,html.nf-open video.bgloop{visibility:hidden}
 html.nf-open .marquee-track{animation-play-state:paused}
 html.nf-open .scrim,html.nf-open .glitch{animation-play-state:paused}
+/* 音游主菜单：难度 / 流速 分段选择器 */
+.nf-opts{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:14px 30px;
+  padding:18px 22px;border:1px solid var(--line);background:rgba(7,10,20,.7);
+}
+.nf-opt{display:flex;flex-direction:column;align-items:center;gap:9px}
+.nf-opt-k{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:var(--paper-dim)}
+.nf-opt-k b{color:var(--cyan);font-weight:600;margin-left:6px;letter-spacing:.1em}
+.nf-seg{display:flex;border:1px solid var(--line)}
+.nf-seg button{
+  cursor:pointer;padding:8px 18px;background:transparent;border:0;border-right:1px solid var(--line);
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;color:var(--paper-dim);transition:all .3s var(--ease);
+}
+.nf-seg button:last-child{border-right:0}
+.nf-seg button:hover{color:var(--paper)}
+.nf-seg button.on{background:var(--red);color:#07080d;box-shadow:0 0 18px rgba(255,42,95,.4)}

@@ -288,66 +288,12 @@
 
   /* ---------- expandable track detail ---------- */
   function accordion() {
-    var items = [].slice.call(document.querySelectorAll(".tracks li"));
-    if (!items.length) return;
-
-    /* 每项顶部插一个不可见标记，用来判断「哪一项最靠近视口中心」。
-       负 margin + 同值 padding 抵消，标记不占布局、不改变视觉。 */
-    var marks = items.map(function (li) {
-      var m = document.createElement("i");
-      m.className = "acc-mark";
-      m.setAttribute("aria-hidden", "true");
-      li.insertBefore(m, li.firstChild);
-      return m;
-    });
-
-    var current = -1;
-    var ticking = false;
-
-    /* 独占展开：滚到哪一项，就只展开那一项。
-       这样评委从上往下滚，每一项都会被强制摊开看一遍，
-       而不是停在一排名单上扫过去。
-       判定线放在视口 50%：条目顶部越过屏幕中线就算轮到了它，
-       往回滚时会退回上一项（判定线太低会让最后一项永远占着）。 */
-    function apply() {
-      ticking = false;
-      var line = window.innerHeight * 0.5;
-      var best = 0;
-      for (var i = 0; i < marks.length; i++) {
-        if (marks[i].getBoundingClientRect().top <= line) best = i;
-        else break;
-      }
-      if (best === current) return;
-      current = best;
-      items.forEach(function (li, i) {
-        li.classList.toggle("open", i === best);
-      });
-    }
-
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(apply);
-    }
-
-    /* 点标题条仍然可以手动开合；滚动接管时以下一次滚动为准 */
-    items.forEach(function (li) {
+    document.querySelectorAll(".tracks li").forEach(function (li) {
       li.addEventListener("click", function (e) {
         if (e.target.closest("a")) return;
-        var wasOpen = li.classList.contains("open");
-        items.forEach(function (o) { o.classList.remove("open"); });
-        if (!wasOpen) {
-          li.classList.add("open");
-          current = items.indexOf(li);
-        } else {
-          current = -1;
-        }
+        li.classList.toggle("open");
       });
     });
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    apply();   /* 初始就展开第一项，评委一眼看到有内容 */
   }
 
   /* ---------- 结尾彩蛋 ----------
@@ -844,8 +790,6 @@
       return notes;
     }
 
-    window.__nfa = { scan: scanFeatures, detect: detectOnsets, grid: estimateGrid, build: buildChart, ROLES: ROLES, DIFF: DIFF };
-
     /* ---------- 分析（起音表缓存到 localStorage，重开秒进） ---------- */
     var analysis = { chart: null, onset: null, grid: null, promise: null, ctx: null };
 
@@ -882,7 +826,6 @@
           done(cached.o.map(function (x) { return { t: x[0], s: x[1], w: x[2], q: x[3], r: ROLES[x[4]] }; }), cached.g);
           return;
         }
-        console.log("NFA_STAGE start", CACHE_KEY, !!cached);
         fetch(AUDIO_SRC)
           .then(function (r) { return r.arrayBuffer(); })
           .then(function (buf) {
@@ -890,18 +833,18 @@
             return analysis.ctx.decodeAudioData(buf);
           })
           .then(function (ab) {
-            var sr = ab.sampleRate, n = ab.length; console.log("NFA_STAGE decoded", sr, n);
+            var sr = ab.sampleRate, n = ab.length;
             var mono = new Float32Array(n);
             for (var ch = 0; ch < ab.numberOfChannels; ch++) {
               var d = ab.getChannelData(ch);
               for (var i = 0; i < n; i++) mono[i] += d[i] / ab.numberOfChannels;
             }
-            var onset = detectOnsets(scanFeatures(mono, sr)); console.log("NFA_STAGE onset", onset.length);
-            var grid = estimateGrid(onset); console.log("NFA_STAGE grid", grid && grid.beat);
+            var onset = detectOnsets(scanFeatures(mono, sr));
+            var grid = estimateGrid(onset);
             if (grid && onset.length >= 30) done(onset, grid);
             else resolve(null);
           })
-          .catch(function (err) { console.error("NFA_ANALYZE_FAIL", err && (err.stack || err)); resolve(null); });
+          .catch(function () { resolve(null); });
       });
       return analysis.promise;
     }
