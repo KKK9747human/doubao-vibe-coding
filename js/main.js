@@ -755,22 +755,29 @@
       var i;
       var sMed = medianOf(onset.map(function (x) { return x.s; })) + 1e-9;
 
-      /* 1) 吸附到十六分网格，一格只留最强 */
-      var cells = {};
+      /* 1) 落点直接用检测到的起音时刻，不再吸附到节拍网格。
+         实测这张谱：起音相对节拍网格的残差中位数有 0.27 个十六分，
+         全 BPM/相位扫一遍最多也只有 26% 的起音压得进格点——网格本身就是错的，
+         吸附等于把音符从真实鼓点上推开，还随曲长越漂越多（「节奏对不上」）。
+         网格留着只做分段、密度和重音参考，落点信起音本身。 */
+      var cells = [];
       for (i = 0; i < onset.length; i++) {
         var o = onset[i];
         if (o.t < 1.6) continue; /* 开局留一拍反应时间 */
-        var pos = (o.t - grid.off) / step;
-        var idx = Math.round(pos);
-        if (idx < 0 || Math.abs(pos - idx) > 0.34) continue;
-        var rel = o.s / sMed;
-        if (!cells[idx] || rel > cells[idx].s) {
-          cells[idx] = { cell: idx, t: grid.off + idx * step, s: rel, w: o.w, r: o.r, q: o.q, lv: levelOf(idx) };
-        }
+        var idx = Math.round((o.t - grid.off) / step);
+        cells.push({ cell: idx, t: o.t, s: o.s / sMed, w: o.w, r: o.r, q: o.q, lv: levelOf(idx) });
       }
-      var list = [];
-      for (var key in cells) list.push(cells[key]);
-      list.sort(function (a, b) { return a.cell - b.cell; });
+      cells.sort(function (a, b) { return a.t - b.t; });
+      /* 45ms 内的起音并成一个：同一记鼓在相邻帧或不同频带会冒两次头 */
+      var list = [], MERGE = 0.045;
+      for (i = 0; i < cells.length; i++) {
+        var lc = list[list.length - 1];
+        if (lc && cells[i].t - lc.t < MERGE) {
+          if (cells[i].s > lc.s) list[list.length - 1] = cells[i];
+          continue;
+        }
+        list.push(cells[i]);
+      }
 
       /* 2) 每 4 小节一段，段内按权重取前 N */
       var SEG = 64, segDur = SEG * step;
@@ -1004,6 +1011,15 @@
 
     function leadTime() { return SPEEDS[prefs.speed]; }
 
+    /* 音频从进 AudioContext 到真的从扬声器出来，中间有一段缓冲（baseLatency/
+       outputLatency）。currentTime 读到的位置比「耳朵听到的位置」超前这段，
+       补偿掉它，画面和判定才和声音同拍。老浏览器读不到就按 0 处理。 */
+    function outLat() {
+      var c = AUDIO_BUS.ensure();
+      if (!c) return 0;
+      return clamp((c.baseLatency || 0) + (c.outputLatency || 0), 0, 0.08);
+    }
+
     function roundedRect(g, x, y, w, h, r) {
       g.beginPath();
       g.moveTo(x + r, y);
@@ -1168,6 +1184,9 @@
     $("nfClose2").addEventListener("click", closeOverlay);
     $("nfStart").addEventListener("click", function () { startRun(); });
     $("nfReplay").addEventListener("click", function () { startRun(); });
+    /* 暂停/继续按钮：之前只绑了 ESC，这个按钮一直没接上事件，
+       点它当然没反应。 */
+    if (elCache.pause) elCache.pause.addEventListener("click", togglePause);
 
     function bindSeg(id, onPick) {
       var box = $(id);
@@ -1194,6 +1213,8 @@
       offInput.addEventListener("input", function () {
         prefs.offset = clamp(+offInput.value || 0, -120, 120);
         if (offVal) offVal.textContent = (prefs.offset > 0 ? "+" : "") + prefs.offset + "ms";
+        /* 正在跑的时候拖动也要立刻生效，不然只能打完这局才知道调没调准 */
+        if (st) st.offset = prefs.offset / 1000;
         savePrefs();
       });
     }
@@ -1263,6 +1284,7 @@
         from: 0, started: false, lyricIdx: -1,
         lead: leadTime(),
         offset: prefs.offset / 1000,
+        alat: outLat(),
         sampleT: 0, sampleAt: 0, t0: performance.now(),
         score: 0, combo: 0, maxCombo: 0,
         perfect: 0, good: 0, ok: 0, miss: 0, judged: 0,
@@ -1284,12 +1306,15 @@
       raf = requestAnimationFrame(loop);
     }
 
-    /* 媒体时钟 + performance.now 插值：按下瞬间的时间比 currentTime 新鲜 */
+    /* 媒体时钟 + performance.now 插值：按下瞬间的时间比 currentTime 新鲜。
+       再减去音频输出延迟（AudioContext 缓冲），对齐的才是「耳朵听到的这一刻」，
+       否则音符总是先于鼓点到判定线、听起来就是快了半拍。
+       prefs.offset（节拍微调）也在这里统一生效，画面和判定用同一个钟。 */
     function clockT() {
       if (!audio || !st) return 0;
       var d = (performance.now() - st.sampleAt) / 1000;
       if (d < 0 || d > 0.2) d = 0;
-      return st.sampleT + d + st.offset;
+      return st.sampleT + d + st.offset - (st.alat || 0);
     }
 
     var lastFrame = 0, fpsCount = 0, fpsAt = 0, fpsShown = -1;
@@ -1321,7 +1346,7 @@
         else { raf = requestAnimationFrame(loop); return; }
       }
       if (paused) { raf = requestAnimationFrame(loop); return; }
-      draw(st.sampleT, dt);
+      draw(clockT(), dt);
       raf = requestAnimationFrame(loop);
     }
 

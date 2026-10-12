@@ -886,6 +886,8 @@ html.nf-open{overflow:hidden}
 .nf-off{width:100%;margin:10px 0 4px;accent-color:var(--red);cursor:pointer}
 .nf-btn-ghost{background:transparent;border:1px solid var(--line);color:var(--paper-dim)}
 .nf-btn-ghost:hover{border-color:var(--red);color:var(--paper)}
+/* 暂停中：按钮点亮，给一个「确实停住了」的视觉反馈 */
+.nf-btn-ghost.open{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 20px rgba(0,229,255,.32)}
 .nf-chartinfo{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;color:var(--paper-dim);margin-top:10px;opacity:.8}
 .nf-stat b i{font-style:normal}
 .nf-lanes{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr)}
