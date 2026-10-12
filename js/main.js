@@ -492,7 +492,7 @@
     if (!overlay || !btn) return;
 
     var AUDIO_SRC = "audio/never-fade-away.mp3";
-    var CACHE_KEY = "nfa:onsets:v12";
+    var CACHE_KEY = "nfa:onsets:v13";
     var ROLES = ["kick", "snare", "bass", "strum", "hat"];
     var KEYS = [68, 70, 74, 75]; /* D F J K */
     var CODES = ["KeyD", "KeyF", "KeyJ", "KeyK"];
@@ -631,7 +631,12 @@
        分带挑峰之后谁响谁说话。 */
     function detectOnsets(frames) {
       var F = frames.length, i, b;
-      var KEY = ["sub", "bl", "md", "hi"], GAIN = { sub: 1.7, bl: 1.8, md: 1.9, hi: 2.1 };
+      var KEY = ["sub", "bl", "md", "hi"], GAIN = { sub: 1.7, bl: 1.8, md: 1.5, hi: 2.1 };
+      /* 中频（吉他/军鼓）单独放宽门槛：连续重扫的包络几乎是平的，
+         通量峰很浅，用和其它频带一样的门槛会把整段扫弦漏掉，
+         表现就是「电吉他扫得越密，谱面反而越稀」。 */
+      var FLOOR = { sub: 0.85, bl: 0.85, md: 0.60, hi: 0.85 };
+      var RATIO = { sub: 1.25, bl: 1.25, md: 1.10, hi: 1.25 };
       var nv = {};
       for (b = 0; b < 4; b++) {
         var k = KEY[b], raw = new Float32Array(F);
@@ -654,7 +659,7 @@
           if (frames[i].q < 0.34) continue; /* 前奏尾奏的安静段别乱冒音符 */
           if (!(a[i] >= a[i - 1] && a[i] >= a[i - 2] && a[i] > a[i + 1] && a[i] > a[i - 4])) continue;
           /* 光看相对通量不够：包络得真的比起音前高出一截才算一次落点 */
-          if (a[i] > Math.max(medianOf(win), 0.85) * GAIN[kk] && frames[i][kk] > frames[i - 6][kk] * 1.25) {
+          if (a[i] > Math.max(medianOf(win), FLOOR[kk]) * GAIN[kk] && frames[i][kk] > frames[i - 6][kk] * RATIO[kk]) {
             cand.push({ i: i, b: kk, v: a[i] });
           }
         }
@@ -773,10 +778,19 @@
       function flush() {
         if (!seg.length) return;
         var qAvg = segQ / seg.length;
-        var n = Math.round(segDur * cfg.cap * clamp(qAvg, 0.45, 1.25));
+        /* 这一段吉他扫得多密：连续重扫时放开密度上限、并让扫弦优先入选；
+           稀疏的分解和弦段落 sd≈0，维持原样，不会把安静段也塞满。 */
+        var strumN = 0, si;
+        for (si = 0; si < seg.length; si++) if (seg[si].r === "strum") strumN++;
+        var sd = clamp((strumN / segDur - 1.4) / 1.3, 0, 1);
+        var n = Math.round(segDur * cfg.cap * (1 + sd * 0.6) * clamp(qAvg, 0.45, 1.25));
         var pool = seg.filter(function (c) { return c.lv <= cfg.maxLevel; });
+        for (si = 0; si < pool.length; si++) {
+          pool[si].sd = sd;
+          pool[si].sw = wt(pool[si]) * (pool[si].r === "strum" ? 1 + sd * 0.8 : 1);
+        }
         if (pool.length > n) {
-          pool = pool.slice().sort(function (a, b) { return wt(b) - wt(a); }).slice(0, n);
+          pool = pool.slice().sort(function (a, b) { return b.sw - a.sw; }).slice(0, n);
         }
         pool.sort(function (a, b) { return a.cell - b.cell; });
         picked = picked.concat(pool);
