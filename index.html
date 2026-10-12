@@ -467,6 +467,11 @@
     </div>
     <div class="nf-body">
       <div class="nf-arena" id="nfArena">
+        <!-- 下落音符画布。JS 里 var cvs = $("nfCanvas"); cvs.getContext("2d")
+             是裸调用、没有 null 检查。之前这块 canvas 缺失，初始化走到这里
+             直接抛 TypeError，后面所有按钮绑定都没执行 —— 表现就是
+             「点 NEVER FADE AWAY 没反应」。 -->
+        <canvas class="nf-canvas" id="nfCanvas"></canvas>
         <div class="nf-lanes">
           <div class="nf-lane" id="nfLane0"><span class="nf-key">D</span></div>
           <div class="nf-lane" id="nfLane1"><span class="nf-key">F</span></div>
@@ -476,6 +481,7 @@
         <div class="nf-judge"></div>
         <div class="nf-lyric" id="nfLyric">A thing of beauty, I know…</div>
         <div class="nf-feed" id="nfFeed"></div>
+        <div class="nf-prog"><i id="nfProg"></i></div>
       </div>
       <div class="nf-hud">
         <div class="nf-score-title">SCORE</div>
@@ -487,6 +493,12 @@
         <div class="nf-stat"><span>GOOD</span><b id="nfGood">0</b></div>
         <div class="nf-stat"><span>OK</span><b id="nfOk">0</b></div>
         <div class="nf-stat"><span>MISS</span><b id="nfMiss" class="red">0</b></div>
+        <div class="nf-stat"><span>已敲 / 总数</span><b><i id="nfTotal">0</i></b></div>
+        <div class="nf-stat"><span>节拍微调</span><b id="nfOffVal">0ms</b></div>
+        <input class="nf-off" id="nfOff" type="range" min="-150" max="150" step="5" value="0" aria-label="节拍偏移微调">
+        <div class="nf-stat"><span>帧率</span><b id="nfFps">–</b></div>
+        <button class="nf-btn nf-btn-ghost" id="nfPause" type="button">⏸ 暂停 / 继续</button>
+        <div class="nf-chartinfo" id="nfChartInfo">谱面准备中…</div>
         <div class="nf-how">音符落进红线时按下对应键。<br>判定很宽容：跟上鼓点，踩住节奏就够。</div>
       </div>
     </div>

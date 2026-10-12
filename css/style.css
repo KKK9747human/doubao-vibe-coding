@@ -868,6 +868,21 @@ html.nf-open{overflow:hidden}
 .nf-side{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:var(--cyan);white-space:nowrap}
 .nf-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 220px}
 .nf-arena{position:relative;min-height:420px;overflow:hidden;border-right:1px solid var(--line)}
+/* 下落音符画布：铺满 arena，压在轨道虚线之上、判定线与歌词之下。
+   HTML 里原本缺这个 canvas，JS 裸调用 getContext 直接抛异常，
+   整个 nfGame 初始化中断 —— 这就是「点音游没反应」的根因。 */
+.nf-canvas{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:none}
+.nf-lanes{z-index:0}
+.nf-judge,.nf-lyric,.nf-feed{z-index:2}
+/* 进度条：贴 arena 底部 */
+.nf-prog{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(0,229,255,.12);z-index:3}
+.nf-prog i{display:block;height:100%;width:0;background:var(--cyan);transition:width .2s linear}
+/* 节拍微调滑杆与次要按钮 */
+.nf-off{width:100%;margin:10px 0 4px;accent-color:var(--red);cursor:pointer}
+.nf-btn-ghost{background:transparent;border:1px solid var(--line);color:var(--paper-dim)}
+.nf-btn-ghost:hover{border-color:var(--red);color:var(--paper)}
+.nf-chartinfo{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;color:var(--paper-dim);margin-top:10px;opacity:.8}
+.nf-stat b i{font-style:normal}
 .nf-lanes{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr)}
 .nf-lane{position:relative;border-left:1px dashed rgba(0,229,255,.12);overflow:hidden}
 .nf-lane:first-child{border-left:0}
