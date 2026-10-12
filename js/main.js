@@ -288,7 +288,15 @@
 
   /* ---------- expandable track detail ---------- */
   function accordion() {
-    document.querySelectorAll(".tracks li").forEach(function (li) {
+    var items = [].slice.call(document.querySelectorAll(".tracks li"));
+
+    /* 默认展开第一项。
+       折叠状态的列表看上去只是一排名单，评委扫一眼未必会去点，
+       于是最想让人看到的那条反而被埋了。
+       第一条默认摊开，既提示「这里可以点」，又保证第一印象就有内容。 */
+    if (items.length) items[0].classList.add("open");
+
+    items.forEach(function (li) {
       li.addEventListener("click", function (e) {
         if (e.target.closest("a")) return;
         li.classList.toggle("open");
