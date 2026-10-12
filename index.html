@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>豆包 · 徐湛 — 个人网页</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=Orbitron:wght@600;900&family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+<!-- 背景是两段预渲染的无缝循环动图：
+       #bgwall 字符乱码墙 —— 全页氛围，在最底层
+       #bgloop 线框城市   —— 只在首屏可见，压在字符墙之上
+     赛博朋克调色：城市加了青色调，字符墙偏夜红。 -->
+<img id="bgwall" class="bgwall" src="video/wall-loop.webp" alt="" aria-hidden="true">
+<img id="bgloop" class="bgloop" src="video/bg-loop.webp" alt="" aria-hidden="true">
+<div class="bg-scrim" aria-hidden="true"></div>
+<canvas id="dust" class="dust"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+
+<nav class="nav">
+  <a class="nav-brand" href="#hero">豆包 的个人博客<span>DUBAD · 徐湛</span></a>
+  <div class="nav-links">
+    <a href="#chapter1"><b>壹</b>做过</a>
+    <a href="#chapter2"><b>贰</b>是谁</a>
+    <a href="#chapter3"><b>叁</b>技能</a>
+    <a href="#chapter4"><b>肆</b>书影音</a>
+    <a href="#chapter5"><b>伍</b>社团信</a>
+  </div>
+</nav>
+
+<div class="rail"><span id="railFill"></span></div>
+<div class="dots">
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+  <span class="dot"></span>
+</div>
+
+<section class="screen hero" id="hero">
+  <div class="wipe"></div>
+  <div class="sun" aria-hidden="true"></div>
+  <div class="strings" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+  <span class="seal">豆</span>
+  <img class="hero-avatar" src="img/avatar.jpg" alt="豆包头像">
+  <p class="hero-kicker">豆包 - PERSONAL WEB</p>
+  <h1 class="hero-title"><span class="hero-zh">Vibe Coding</span></h1>
+  <p class="hero-sub"> XU ZHAN </p>
+  <div class="hero-line"><span></span></div>
+  <p class="hero-note">写字的人开始写代码，听歌的人试着做网页。<br>这一页，是我递给社团的手写的名片。</p>
+  <div class="scroll-hint">往下<span class="scroll-hint-line"></span></div>
+</section>
+
+<section class="screen chapter" id="chapter1">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">第一章 · 壹</span>
+    <h2 class="chap-title">做过与手痒</h2>
+    <span class="chap-en">STUFF I BUILT</span>
+  </div>
+  <div class="prose" data-reveal>
+    <p>了解一个人，莫过于看他<em>做过什么</em>。那就不急着自我介绍了，下面这些才算数。</p>
+    <p>这几样是我在 <em>E:\code</em> 里真刀真枪做出来的：有写着玩的，有认真挖了几个小时坑的。每一样都教会我一件事。</p>
+  </div>
+  <div class="tracks" data-reveal>
+    <p class="block-label">项目档案<span class="hint">· 点名称展开详情</span></p>
+    <ol>
+      <li>
+        <div class="t-head">
+          <span class="t-no">01</span><b>SafeTrace · AI 安全漏洞情报系统</b><i>Node/TS · Vue3 · Qdrant</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img class="no-filter" src="img/safetrace.webp" alt="SafeTrace 系统架构总图" loading="lazy">
+          <div class="td-text"><p>给安全工程师用的漏洞情报平台。输入一句自然语言问题，比如"Ollama 未授权访问漏洞影响我们哪些服务，今晚先修哪个"，系统自己去查漏洞库和文档，返回答案时会带上出处、推理链和修复优先级。</p><p>数据从 7 类情报源进来（NVD / CVE、cvelistV5、GitHub Advisory、OSV / KEV / EPSS、厂商公告、安全社区、arxiv），经 Y 线监测去重、F 线六维富化，建成知识底座，最后走 Q 线问答。</p><p>我负责问答线、TaskGraph 编排、MG1 模型网关和接口契约。TaskGraph 管着监测、富化、问答、自愈四个 Agent，支持挂起恢复；所有模型调用都从 MG1 走，业务代码里不允许直接 import 任何 provider，换模型只改配置。兜底设计了一个阶梯：工具 → 规则 → 本地模型 → 云模型 → 人工工单，每一级都记录在 trace 里，不允许静默失败。契约先行落了 8 个 JSON Schema 加 OpenAPI，4 个人并行开发没打过架。</p><p>实测数据：真实联网跑了 74.08 小时没断，新漏洞监测延迟 P95 是 4.99 小时，归并率 91.2%（71,712 条原始数据收敛成 6,314 条情报）。20 条黄金问答全部通过，没有证据的时候会明确拒答而不是编。全量单测 908 个，907 通过。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">02</span><b>AskTrace · 可审计的自然语言查库智能体</b><i>FastAPI · DuckDB · sqlglot</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <span class="td-ph">截图待补</span>
+          <div class="td-text"><p>把业务问题变成取数答案。流程是：检索相关的表，让大模型写出只读 SQL，做语法校验并限制行数，再执行。每一步都留 trace，答错了能查到是哪一步出的问题。</p><p>检索这块做了三级漏斗：先用词法召回一批候选表，让大模型精排，最后沿着外键把关联表一起带进来。SQL 安全上了两道锁，sqlglot 做 AST 只读校验并注入 LIMIT，DuckDB 本身也用只读方式打开。回答不了的时候会明确反问，区分是"没找到合适的表"还是"问题太含糊"，不会硬猜一个结果给你。</p><p>后端垂直切片已经跑通，约 73 个测试用例。TypeScript 编排层和前端还没做。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">03</span><b>本地 AI 图像超分增强</b><i>clear_image · Real-ESRGAN</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/clear.png" alt="clear_image 截图" loading="lazy">
+          <div class="td-text"><p>本地跑 Real-ESRGAN 把模糊照片变清晰并放大，模型内置好了 69 MB，双击 启动.bat 自动装环境。</p><p>工程上的重点在推理后端抽象：同一套核心代码支持 OpenVINO 的 NPU / iGPU / CPU 和 onnxruntime 的 DirectML（走 RTX）四种后端，启动时自动挑一个能用的。图片是分块推理的，块与块之间用羽化过渡把接缝抹掉，另加逐档强度混合；倍率有 5 档（×1.5 到 ×4.0）。</p><p>GUI 支持单图和整文件夹批量，有进度显示，中途能取消。</p><p>待清理：app/core/config.py 里留了一个没被引用的明文 API Key，得删掉并处理 git 历史。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">04</span><b>Mus1c · 桌面音乐播放器</b><i>PyQt6 · SQLite · Win32</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/mus1c.png" alt="Mus1c 界面截图" loading="lazy">
+          <div class="td-text"><p>一个单文件的 PyQt6 播放器，约 4000 行。能多线程扫盘建曲库（SQLite）、改歌曲元数据、异步加载封面、管歌单收藏、显示 .lrc 同步歌词和桌面悬浮歌词，还有黑胶详情页、可视化条和系统托盘。</p><p>最费劲的是桌面壁纸模式：把播放器自己画成 Windows 桌面壁纸，同时自动隐藏任务栏。后来做了个精修版（Mus1c-LiquidGlass），加了毛玻璃面板，并用 UpdateLayeredWindow 重写壁纸渲染，把 Win11 24H2 上的闪烁修掉了。</p><p>不联网。文件在哪，歌就在哪放。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">05</span><b>IconFly · 桌面图标飞行特效</b><i>.NET 9 · WPF · NAudio</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/iconfly.png" alt="IconFly 截图" loading="lazy">
+          <div class="td-text"><p>让真实的桌面图标飞起来，互相碰撞，跟着鼠标和音乐动。做法是用 P/Invoke 跨进程读到 explorer 的 SysListView32，把每个图标的文本、位置和 shell 高清图标抠出来，再放飞。</p><p>做了 13 种运动模式（Bounce、Circle、Vortex、Gravity、Brownian、Pulse、Disco 等），图标之间是成对圆碰撞加弹性冲量。鼠标悬停能暂停，甩动能投掷，按住右键蓄力发射，双击直接运行原程序。</p><p>音频驱动走 WASAPI 回环加 FFT，图标跟着鼓点跳，响应曲线可以用鼠标拖。按 ESC 一键还原真实桌面，不会把你的桌面弄乱。</p><p>源码在 <a href="https://github.com/KKK9747human/IconFly" target="_blank" rel="noopener">github.com/KKK9747human/IconFly</a></p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">06</span><b>本地 AI 模型管理器</b><i>ModelManager · GUI</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/modelmanager.png" alt="ModelManager 界面截图" loading="lazy">
+          <div class="td-text"><p>本机 ComfyUI 和 Ollama 的模型分散在好几个文件夹里，翻起来麻烦，就写了这个管理器统一管。左边按来源和分类建树，右边列表带类型、分类、大小、修改时间和完整路径，能按名称或路径搜，底下实时统计一共多少个模型、合计多少 GB。</p><p>模型从哪来这件事抽成了 ModelSource，想接新来源再写一个实现就行。删除做成回收站式，删错了能拿回来；停 Ollama 服务时按进程树清理，不留孤儿进程；服务状态每 3 秒自动刷一次。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">07</span><b>8051 单片机 Web 模拟器</b><i>hc6800 · 纯 JavaScript</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/hc6800.png" alt="hc6800 模拟器界面截图" loading="lazy">
+          <div class="td-text"><p>在浏览器里还原 HC6800-ES 这块 8051 开发板，纯 JavaScript 写的，没用框架。左边写汇编，中间看寄存器和反汇编，右边是完整的外设面板。</p><p>能汇编并加载、导入 HEX、单步和单步跳过、运行、复位。寄存器和标志位实时刷新，反汇编列表可以点地址下断点，内部 RAM 能直接改。外设覆盖 P2 低有效 LED、P0 段码数码管、LCD1602、蜂鸣器、4×4 矩阵键盘、串口终端，另外有符号表和 12MHz 速度节流。</p><p>内置了示例程序（比如 LED 流水灯）。写它的原因很简单：没带板子的时候也想验证一小段汇编到底跑成什么样。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">08</span><b>闲置哨兵 · 隐藏后台进程检测</b><i>idle_guard · Python/Tkinter</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/idleguard.png" alt="idle_guard 界面截图" loading="lazy">
+          <div class="td-text"><p>对付那些桌面上没窗口、托盘里没图标的进程。这类东西任务管理器里很难一眼挑出来，它按窗口状态和托盘这两个标签单独拎出来。</p><p>进程表有九列：窗口状态、平均 CPU、内存、累计 CPU 时间、PID、必要性分级、内存峰值和可执行文件路径。判定规则就写在列头上，平均 CPU 到 5% 标可疑，内存到 200MB 标无用，两个都占就叫可疑·无用；另有系统必要、系统组件、白名单三档做对照。选中的进程能一键加入或移出白名单，也能搜索、排序、打开文件位置、结束进程。</p><p>四个页面分别是隐藏进程检测、开机自启管理、服务管理、设置与日志。启动项和服务走注册表和 sc.exe、reg.exe，这里守一条线：所有破坏性操作都可逆。禁用启动项会先备份原注册表值，改服务启动类型也记下原值，随时能一键还原。采样在后台守护线程里跑，不碰 UI。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">09</span><b>Obsidian 笔记镜像同步</b><i>FolderSync · C#</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/notesync.png" alt="FolderSync 截图" loading="lazy">
+          <div class="td-text"><p>常驻后台的文件夹镜像同步，把 <em>E:\note\xznote</em> 镜像到 OneDrive。</p><p>这里的坑在于别把写了一半的笔记同步出去。改动先防抖 3 秒再合并，另外挂了个 10 分钟的安全网兜底，出问题还能回滚。参数都写在 JSON 里，双击就能用，开机自启常驻。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">10</span><b>威肯档案站</b><i>weeknd · 致敬欧美音乐</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/weeknd.png" alt="weeknd 截图" loading="lazy">
+          <div class="td-text"><p>The Weeknd 档案站。骨架跟万青那个一样，换肤不换骨：按章节分区换色（酒红、冷蓝、银灰），正文从中文散文换成 52 首曲目清单和幕后故事。</p><p>这一版主要拿来试动效。底片走马灯画廊、快门辐条进场、构成主义几何背景、逐条飞入都用上了。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">11</span><b>万青档案站</b><i>wanqing · 墨纸红印风</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/wanqing.png" alt="wanqing 截图" loading="lazy">
+          <div class="td-text"><p>墨纸红印风格的万青档案站，有歌词、成员和章节时间线，配了灰尘粒子、幕布和打字机标题。</p><p>你正在看的这一页个人站，骨架就是从这里长出来的。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">12</span><b>苹果设计 skill 的尝试：网页计算器</b><i>calculator · HTML/CSS/JS</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <img src="img/calc.png" alt="calculator 截图" loading="lazy">
+          <div class="td-text"><p>练「苹果设计」时做的网页计算器。按钮的节奏、字号缩放和阴影质感基本靠 CSS 复刻，做了深色和浅色两套主题，纯 HTML/CSS/JS 没有依赖。</p><p>这次刻意不加动效，类名也尽量少写，算是练克制。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">13</span><b>Vibe Coding · 个人网站（本页）</b><i>HTML/CSS/JS · Web Audio</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <span class="td-ph">就是你正在看的这一页</span>
+          <div class="td-text"><p>赛博朋克风格的个人主页，手写无框架。藏了几颗彩蛋：吉他指板每一格都能点响（走一套共用的暖拨弦合成器），和弦卡能试听，底下还有一个小音游，谱面是用 Web Audio 现场分析鼓点生成的，四轨下落、判定、连击、结算都做了。</p><p>背景是预渲染的无缝循环动图（字符乱码墙加线框城市），琴弦和扫描线做氛围。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">14</span><b>实时 NPU 变声器</b><i>rvc_npu_vc · OpenVINO</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <span class="td-ph">截图待补</span>
+          <div class="td-text"><p>把男声实时变成女声，推理跑在 Intel AI Boost NPU 上，全链路走 OpenVINO，CPU 和 GPU 可以回退。</p><p>流式推理用 1 秒主窗加 0.5 秒滑动，接缝处交叉淡化抹平；VAD 做静音门控，不说话就直接跳过推理省电。没模型的时候会自动退回 DSP 变调，保证一定出得了声。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">15</span><b>八数码求解器（赚微软积分换 KFC 折扣）</b><i>8puzzle · C++ BFS</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <span class="td-ph">截图待补</span>
+          <div class="td-text"><p>C++ 写的八数码求解器，广度优先搜索，状态做了去重，把乱序的 3×3 棋盘还原成目标布局。</p><p>本来是薅微软积分用的，写着玩，但这一趟把「状态空间」四个字弄明白了。顺带理解了为什么同一道题换个搜索方向，代价能差一个量级。</p></div>
+        </div>
+      </li>
+      <li>
+        <div class="t-head">
+          <span class="t-no">16</span><b>Windows 沙箱 ACL 一键修复</b><i>dsh-acl-recovery · PowerShell</i><span class="t-t">2026<span class="caret">+</span></span>
+        </div>
+        <div class="t-detail">
+          <span class="td-ph">纯命令行工具，无界面</span>
+          <div class="td-text"><p>被沙箱的权限拒绝卡住时拿来救急的脚本。它会把目录链上的 ACL 查一遍，找出缺 WRITE_DAC、WRITE_OWNER 或 FullControl ACE 的那一层并补齐，补完自己再验一次确认修好了。</p><p>带完整的 SYNOPSIS 和中文注释。这是给自己工具链打的补丁，不是给别人用的东西。</p></div>
+        </div>
+      </li>
+    </ol>
+    <div class="github-slot">
+      <span>GitHub：   <em>github.com/KKK9747human</em></span>
+      <span>小白的主页</span>
+    </div>
+  </div>
+  <div class="quote" data-reveal>
+    <blockquote>别问我会不会，问我想不想琢磨。</blockquote>
+    <cite>—— 豆包 · 项目栏备注</cite>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>豆包</span><em>·</em><span>干啥都得带点劲</span><em>·</em><span>也带点脾气</span><em>·</em><span>代码是新的纸</span><em>·</em><span>写满为止</span><em>·</em><span>徐湛敬上</span><em>·</em><span>欢迎加入</span><em>·</em>
+  </div>
+</div>
+
+<section class="screen chapter" id="chapter2">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">第二章 · 贰</span>
+    <h2 class="chap-title">我是谁</h2>
+    <span class="chap-en">WHO I AM</span>
+  </div>
+  <div class="prose" data-reveal>
+    <p>我叫 <em>徐湛</em> ，别人叫我豆包(笑)。几个月前我还在怀疑「代码这种东西，真的和我有关系吗」。现在这句话，成了这一页的第一行字。</p>
+    <p>这一页是我和 AI 一起敲出来的。它管语法和结构，我管字与字之间的分寸。希望你翻的时候能感觉到，这不是把模板填满就交差的东西。</p>
+  </div>
+  <div class="facts" data-reveal>
+    <div class="fact"><span class="fact-k">姓名</span><b>徐湛（昵称：豆包）</b></div>
+    <div class="fact"><span class="fact-k">专业</span><b>智能科学与技术</b></div>
+    <div class="fact"><span class="fact-k">身份</span><b>vibe coding 新生 · 半路出家的写字的</b></div>
+    <div class="fact"><span class="fact-k">喜好</span><b>爱黑色幽默、吉他与生活</b></div>
+    <div class="fact"><span class="fact-k">正在做</span><b>用 AI 把脑子里的想法变成能打开的网页</b></div>
+    <div class="fact"><span class="fact-k">心之所向</span><b>只做符合自己审美的东西</b></div>
+  </div>
+  <div class="members" data-reveal>
+    <p class="block-label">几件小事</p>
+    <ul>
+      <li><b>熬夜与agent较劲</b><span>凌晨三点的报错，最让人清醒</span></li>
+      <li><b>薅羊毛</b><span>哪里有免费token，我就去哪</span></li>
+      <li><b>听歌写文</b><span>音乐是背景，文字是正餐</span></li>
+      <li><b>研究排版</b><span>把每个字，放到它该在的地方</span></li>
+    </ul>
+  </div>
+  <div class="timeline" data-reveal>
+    <p class="block-label">成长线</p>
+    <ol>
+      <li><time>25年1月</time><span>第一次上手deepseek，试着和 AI 好好说话</span></li>
+      <li><time>高三</time><span>泡在书堆里，隐隐约约感到"未知来临"</span></li>
+      <li><time>7月</time><span>学会使用agent</span></li>
+      <li><time>现在</time><span>站在招新门口，交出这份作品当敲门砖</span></li>
+    </ol>
+  </div>
+  <div class="fret" data-reveal aria-hidden="true"></div>
+</section>
+
+<section class="screen chapter" id="chapter3">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">第三章 · 叁</span>
+    <h2 class="chap-title">我的工具箱</h2>
+    <span class="chap-en">TOOLS & TASTE</span>
+  </div>
+  <div class="prose" data-reveal>
+    <p>工具是会过时的，手感不会。比起超出我预算的工具，我更喜欢更便宜或更开源的<em>东西</em>。</p>
+  </div>
+  <div class="keywords" data-reveal>
+    <p class="block-label">手提箱里</p>
+    <div class="keyword-list">
+      <span>Opencode</span><span>Deepseek</span><span>Github</span>
+      <span>TareWork</span><span>ComfyUI</span><span>Zimage</span>
+      <span>茶与专注</span><span>钻研</span>
+    </div>
+  </div>
+  <div class="honors" data-reveal>
+    <p class="block-label">正在进化的</p>
+    <ul>
+      <li>传统编程的克制：Vibe Coding之前，先学会传统</li>
+      <li>产品的人味：每个元素都要符合人的审美</li>
+      <li>做能说清的作品：页面会说话，人也应该会</li>
+      <li>把审美变成代码：遇见喜欢的，拆成像素与字号</li>
+    </ul>
+  </div>
+</section>
+
+<section class="screen chapter" id="chapter4">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">第四章 · 肆</span>
+    <h2 class="chap-title">书影音与活法</h2>
+    <span class="chap-en">TASTE</span>
+  </div>
+  <div class="profiles" data-reveal>
+      <div class="profile">
+          <b>代码观</b><span class="p-role">一种手艺</span>
+          <p>代码也是一种字。以前的人要先学会"写字"才能写出"好文章"，现在的人，只要有"好想法"就能写出"好文章" </p>
+      </div>
+      <div class="profile">
+          <b>音乐</b><span class="p-role">重复播放</span>
+          <p>《冀西南林路行》听了又听：更"宏大"的命题，实则和当下、你我，息息相关</p>
+          <img src="img/taste-music.jpg" alt="冀西南林路行" loading="lazy">
+      </div>
+      <div class="profile">
+          <b>动漫</b><span class="p-role">未来的，已来的</span>
+          <p>《赛博朋克：边缘行者》科技与人、爱与死亡</p>
+          <img src="img/taste-anime.jpg" alt="赛博朋克：边缘行者" loading="lazy">
+      </div>
+
+      <div class="profile">
+          <b>书</b><span class="p-role">黑色幽默</span>
+          <p>《三十而立》自贬以刺痛自己的高傲，同时又高傲的显出愚钝以嘲弄自己的智慧，最后再将以上一切行为施予轻蔑的嗤之以鼻</p>
+          <img src="img/taste-book.jpg" alt="三十而立" loading="lazy">
+      </div>
+
+  </div>
+  <div class="quote" data-reveal>
+    <blockquote>好看的背面是耐心，耐心的背面是真心。</blockquote>
+    <cite>—— 豆包 · 审美是个动词</cite>
+  </div>
+</section>
+
+<section class="screen chapter" id="chapter5">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">第五章 · 伍</span>
+    <h2 class="chap-title">写给社团</h2>
+    <span class="chap-en">TO THE CLUB</span>
+  </div>
+  <div class="essay" data-reveal>
+    <p>我想加入 vibe coding 社团，不是为了会说一句「我会写网页」，而是想和一群愿意为细节较劲的人待在一起。</p>
+    <cite>—— 徐湛（豆包） · 入社申请 · 第一稿</cite>
+  </div>
+  <div class="prose" data-reveal data-delay="1">
+    <p>我会的不多，但愿意学。如果社团需要一个抢着改 bug、也抢着改注释的人，我第一个举手。</p>
+  </div>
+  <div class="quote" data-reveal>
+    <blockquote>做一辈子好玩的东西，或者至少，做几个。</blockquote>
+    <cite>—— 与未来队友共勉</cite>
+  </div>
+  <div class="fret" data-reveal aria-hidden="true"></div>
+</section>
+
+<!-- =====================================================================
+     附加 · 吉他彩蛋：不改动上面任何一页，纯粹是加出来的东西。
+     ===================================================================== -->
+<section class="screen chapter" id="guitar">
+  <div class="wipe"></div>
+  <div class="chapter-head">
+    <span class="chap-no">附加 · GUITAR</span>
+    <h2 class="chap-title">吉他彩蛋</h2>
+    <span class="chap-en">SIX STRINGS · ORNAMENTAL</span>
+  </div>
+  <div class="prose" data-reveal>
+    <p>正文一个字都没改，只是往这页里塞了几根弦、一个指板和一个音量旋钮。弹琴的人，总得留点自己的手势。</p>
+    <p>点下面的指板格子试试，这次的音色调暖过了。</p>
+  </div>
+
+  <div class="gear" data-reveal>
+    <div class="gear-item">
+      <span class="g-ico">🎸</span>
+      <b>主力琴</b><span class="g-role">电吉他 · 六弦</span>
+      <p>一把入门电吉他，失真一开就是整个夜之城的底噪。</p>
+    </div>
+    <div class="gear-item">
+      <span class="g-ico">🎚️</span>
+      <b>信号链</b><span class="g-role">过载 → 失真 → 延迟</span>
+      <p>把干净的分解和弦，一层层染成摇滚的颜色。</p>
+    </div>
+    <div class="gear-item">
+      <span class="g-ico">🔊</span>
+      <b>音量</b><span class="g-role">房间即 Live House</span>
+      <p>音箱不一定贵，但一定要够响，响到能盖过一天的疲惫。</p>
+    </div>
+    <div class="gear-item">
+      <span class="g-ico">🎵</span>
+      <b>拨片</b><span class="g-role">0.88mm</span>
+      <p>厚一点，才压得住重失真；像出膛的子弹，一下就到。</p>
+    </div>
+  </div>
+
+  <div class="fretboard" data-reveal>
+    <div class="fb-strings" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="fb-row" id="fretBoard">
+      <div class="fb-cell" data-freq="82.41"><span class="fb-fret">0品</span><span class="fb-note">E</span></div>
+      <div class="fb-cell" data-freq="87.31"><span class="fb-fret">1品</span><span class="fb-note">F</span></div>
+      <div class="fb-cell" data-freq="92.50"><span class="fb-fret">2品</span><span class="fb-note">F#</span></div>
+      <div class="fb-cell" data-freq="98.00"><span class="fb-fret">3品</span><span class="fb-note">G</span></div>
+      <div class="fb-cell" data-freq="103.83"><span class="fb-fret">4品</span><span class="fb-note">G#</span></div>
+      <div class="fb-cell" data-freq="110.00"><span class="fb-fret">5品</span><span class="fb-note">A</span></div>
+      <div class="fb-cell" data-freq="116.54"><span class="fb-fret">6品</span><span class="fb-note">A#</span></div>
+    </div>
+  </div>
+
+  <div class="riffs" data-reveal>
+    <div class="riff" data-chord="110,130.81,164.81"><span class="r-name">Am</span><span class="r-tag">雨夜分解</span><div class="r-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="r-play">▶</span></div>
+    <div class="riff" data-chord="82.41,123.47,164.81"><span class="r-name">E5</span><span class="r-tag">失真扫弦</span><div class="r-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="r-play">▶</span></div>
+    <div class="riff" data-chord="130.81,164.81,196"><span class="r-name">C</span><span class="r-tag">黄昏solo</span><div class="r-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="r-play">▶</span></div>
+    <div class="riff pf" data-chord="98,146.83,196"><span class="r-name">G5</span><span class="r-tag">强力和弦 · 起飞riff</span><div class="r-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="r-play">▶</span></div>
+  </div>
+
+  <div class="quote" data-reveal>
+    <blockquote>六根弦，够我拆掉一整天的情绪。</blockquote>
+    <cite>—— 豆包 · 拨片备注</cite>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-mark">豆</div>
+  <p class="footer-sub">徐湛 · XU ZHAN · 豆包</p>
+  <div class="footer-line"><span></span></div>
+  <p class="footer-note">vibe coding 社团招新考核 · 个人网页 demo<br>热爱</p>
+  <p class="footer-quote">「把喜欢的东西，做成能打开的样子。」</p>
+  <button class="egg-btn" id="eggBtn" type="button">♪ NEVER FADE AWAY · 彩蛋音游</button>
+</footer>
+
+<!-- =====================================================================
+     结尾彩蛋 · 放在页脚之后，是整页最后一块内容
+     强尼这张图不折叠，直接铺出来抓注意力；下面的卡片再把话说清楚，
+     并顺手把音游彩蛋指出来（就在上面那个按钮）。
+     ===================================================================== -->
+<section class="ending" id="ending">
+  <figure class="ending-fig">
+    <img src="img/johnny.webp" alt="赛博朋克 2077 风格的强尼·银手（牛奶蛙版）" loading="lazy">
+  </figure>
+  <div class="ending-card" id="endingCard">
+    <span class="eg-tag">彩蛋</span>
+    <span class="eg-main">你居然真的看到了这里</span>
+  </div>
+  <div class="ending-text" id="endingBody">
+    <p class="eg-thanks">感谢你看到这里。</p>
+    <p>前面几页都是正经东西，项目、技能、书影音。既然你都翻到底了，就把藏在这儿的最后一件也说了：上面这位是<em>强尼·银手</em>。赛博朋克 2077 里那个抱着吉他跟全世界叫板的家伙，也是这家站从头到尾的底色。</p>
+    <p>顺便把彩蛋都指出来：上面的<em>♪ NEVER FADE AWAY</em> 按钮点开是个小音游，四轨下落、有判定和结算；谱面不是手写的，是现场分析这首歌的鼓点生成的。吉他页的指板点得响，和弦卡能试听。武侍乐队那首《Never Fade Away》，歌名就印在他旁边那把琴上。</p>
+    <p class="eg-last">愿意翻到最后的人，才找得到藏在最底下的东西。</p>
+  </div>
+</section>
+<!-- =====================================================================
+     彩蛋：NEVER FADE AWAY · 下落音游
+     4 道（D F J K），音符沿歌词画面下落，落点压线时按下对应键。
+     ===================================================================== -->
+<div class="nf-overlay" id="nfOverlay">
+  <div class="nf-box" role="dialog" aria-modal="true" aria-label="Never Fade Away 下落音游">
+    <div class="nf-head">
+      <div class="nf-title">NEVER <em>FADE</em> AWAY</div>
+      <div class="nf-side">SAMURAI · D F J K · 跟鼓点走</div>
+    </div>
+    <div class="nf-body">
+      <div class="nf-arena" id="nfArena">
+        <div class="nf-lanes">
+          <div class="nf-lane" id="nfLane0"><span class="nf-key">D</span></div>
+          <div class="nf-lane" id="nfLane1"><span class="nf-key">F</span></div>
+          <div class="nf-lane" id="nfLane2"><span class="nf-key">J</span></div>
+          <div class="nf-lane" id="nfLane3"><span class="nf-key">K</span></div>
+        </div>
+        <div class="nf-judge"></div>
+        <div class="nf-lyric" id="nfLyric">A thing of beauty, I know…</div>
+        <div class="nf-feed" id="nfFeed"></div>
+      </div>
+      <div class="nf-hud">
+        <div class="nf-score-title">SCORE</div>
+        <div class="nf-score" id="nfScore">0</div>
+        <div class="nf-combo" id="nfCombo">0<small style="font-size:.6rem;color:var(--paper-dim)"> COMBO</small></div>
+        <div class="nf-acc-title">ACCURACY</div>
+        <div class="nf-acc" id="nfAcc">—</div>
+        <div class="nf-stat"><span>PERFECT</span><b id="nfPerf">0</b></div>
+        <div class="nf-stat"><span>GOOD</span><b id="nfGood">0</b></div>
+        <div class="nf-stat"><span>OK</span><b id="nfOk">0</b></div>
+        <div class="nf-stat"><span>MISS</span><b id="nfMiss" class="red">0</b></div>
+        <div class="nf-how">音符落进红线时按下对应键。<br>判定很宽容：跟上鼓点，踩住节奏就够。</div>
+      </div>
+    </div>
+    <div class="nf-menu" id="nfMenu">
+      <div class="nf-menu-title">NEVER FADE AWAY</div>
+      <p class="nf-menu-sub">SAMURAI · 夜之城下行插件<br>听歌落点，只看节奏。让它在离开之前，被敲完。</p>
+      <button class="nf-btn" id="nfStart" type="button">▶ 开始 PLAY</button>
+      <span class="nf-keys">D · F · J · K</span>
+    </div>
+    <div class="nf-result" id="nfResult">
+      <div class="nf-grade" id="nfGrade">S</div>
+      <div class="nf-result-sub" id="nfResultSub">ACC 100.0% · 0 HITS</div>
+      <div class="nf-statrow">
+        <span>分数<b id="nfFS">0</b></span>
+        <span>最大连击<b id="nfFC">0</b></span>
+        <span>失误<b id="nfFM">0</b></span>
+      </div>
+      <button class="nf-btn" id="nfReplay" type="button">↻ 再来一次</button>
+      <button class="nf-btn ghost" id="nfClose2" type="button">关闭</button>
+    </div>
+    <button class="nf-close" id="nfClose" type="button" title="关闭">✕</button>
+  </div>
+</div>
+<script src="js/main.js?v=3" defer></script>
+</body>
+</html>

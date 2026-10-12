@@ -1,0 +1,10 @@
+.idea/
+.vscode/
+Thumbs.db
+desktop.ini
+__pycache__/
+*.pyc
+.chk/
+.v*/
+.preview/
+_*.ps1

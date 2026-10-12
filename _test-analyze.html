@@ -1,0 +1,82 @@
+<!doctype html><meta charset="utf-8"><title>analysis test</title>
+<pre id="out">running…</pre>
+<script>
+function log(x){ var o=document.getElementById("out"); o.textContent=o.textContent+"\n"+x; }
+function medianOf(arr){var s=arr.slice().sort(function(a,b){return a-b;});return s[(s.length/2)|0];}
+function detectOnsets(mono,sr){
+  var WIN=Math.floor(sr*0.03),HOP=Math.floor(sr*0.006);
+  var win2=(WIN*0.6)|0,n=mono.length,frames=[];
+  for(var t=0;t+WIN<=n;t+=HOP){
+    var s=0;
+    for(var i=win2;i<WIN;i++){var x=mono[t+i];s+=x*x;}
+    frames.push({t:(t+WIN/2)/sr,e:Math.sqrt(s/(WIN-win2))});
+  }
+  var back=[],onset=[],lastOn=-1e9;
+  for(var f=0;f<frames.length;f++){
+    back.push(frames[f].e);if(back.length>32)back.shift();
+    if(f<14)continue;
+    var bg=medianOf(back);if(bg<2e-4)continue;
+    if(frames[f].e>bg*1.45&&frames[f].e>bg+4.5e-4){
+      if(frames[f].t-lastOn>0.1){onset.push(frames[f].t);lastOn=frames[f].t;}
+    }
+  }
+  return onset;
+}
+function gridFromOnsets(onset){
+  if(onset.length<6)return null;
+  var ints=[];
+  for(var i=1;i<onset.length;i++){var d=onset[i]-onset[i-1];if(d>0.13&&d<1.1)ints.push(d);}
+  if(ints.length<4)return null;
+  var beat=medianOf(ints),q=beat/2,qq=q/2;
+  function gridCost(step){
+    var res={c:1e9,off:0};
+    for(var off=0;off<step;off+=0.004){
+      var c=0;
+      for(var k=0;k<onset.length;k++){
+        var pos=(onset[k]-off)/step;var d2=Math.abs(pos-Math.round(pos));
+        c+=d2>0.5?0.5:d2;
+      }
+      if(c<res.c)res={c:c,off:off};
+    }
+    return res;
+  }
+  var g8=gridCost(q),g16=gridCost(qq);
+  var g=(g16.c<g8.c-onset.length*0.015)?{step:qq,off:g16.off}:{step:q,off:g8.off};
+  var notes=[],last=-1e9;
+  for(var k2=0;k2<onset.length;k2++){
+    var pos=(onset[k2]-g.off)/g.step;var near=Math.round(pos);
+    if(Math.abs(pos-near)>0.28)continue;
+    var tt=g.off+near*g.step;
+    if(tt<0.6)continue;
+    if(tt-last<g.step*0.5)continue;
+    notes.push(tt);last=tt;
+  }
+  if(notes.length>380)notes=notes.filter(function(_,x){return x%2===0;});
+  return notes.length>=30?{notes:notes,beat:beat,gstep:g.step,offsets:onset}:null;
+}
+fetch("audio/never-fade-away.mp3").then(function(r){log("fetch status "+r.status);return r.arrayBuffer();})
+.then(function(buf){
+  log("fetched "+buf.byteLength+" bytes, decoding via OfflineAudioContext…");
+  var ctx=new OfflineAudioContext(2, 44100, 44100);
+  return ctx.decodeAudioData(buf);
+}).then(function(ab){
+  var sr=ab.sampleRate,n=ab.length,mono=new Float32Array(n);
+  for(var ch=0;ch<ab.numberOfChannels;ch++){
+    var d=ab.getChannelData(ch);
+    for(var i=0;i<n;i++)mono[i]+=d[i]/ab.numberOfChannels;
+  }
+  log("decoded sr="+sr+" ch="+ab.numberOfChannels+" dur="+(n/sr).toFixed(2));
+  var onset=detectOnsets(mono,sr);
+  var r=gridFromOnsets(onset);
+  if(!r){log("GRID FAILED onsets="+onset.length);}
+  else{
+    log("onsets="+r.offsets.length);
+    log("beat(median interval)="+r.beat.toFixed(3)+"s  ("+(60/r.beat).toFixed(1)+" BPM)");
+    log("grid step="+r.gstep.toFixed(3)+"s  notes="+r.notes.length);
+    var short=[];
+    for(var k=0;k<Math.min(r.notes.length,20);k++)short.push(r.notes[k].toFixed(2));
+    log("first20: "+short.join(", "));
+    log("last4: "+r.notes.slice(-4).map(function(x){return x.toFixed(2)}).join(", "));
+  }
+}).catch(function(e){log("ERR "+e);});
+</script>
