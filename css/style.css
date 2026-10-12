@@ -498,6 +498,12 @@ html.js .screen.on.curtain .wipe{
 .tracks li:hover::after{transform:scaleX(1)}
 .tracks li:hover{color:var(--cyan)}
 .tracks .t-head{display:contents}
+/* 滚动判定用的不可见标记：负 margin 抵消 padding，完全不占布局 */
+.acc-mark{
+  display:block;height:0;
+  margin-top:-10px;padding-top:10px;
+  pointer-events:none;visibility:hidden;
+}
 .t-no{font-family:var(--mono);font-size:.78rem;color:var(--paper-dim);letter-spacing:.1em}
 .tracks b{font-size:1.02rem;font-weight:600;letter-spacing:.08em}
 .tracks i{font-style:normal;font-family:var(--mono);font-size:.7rem;color:var(--cyan);letter-spacing:.12em;opacity:.85}

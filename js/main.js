@@ -289,19 +289,65 @@
   /* ---------- expandable track detail ---------- */
   function accordion() {
     var items = [].slice.call(document.querySelectorAll(".tracks li"));
+    if (!items.length) return;
 
-    /* 默认展开第一项。
-       折叠状态的列表看上去只是一排名单，评委扫一眼未必会去点，
-       于是最想让人看到的那条反而被埋了。
-       第一条默认摊开，既提示「这里可以点」，又保证第一印象就有内容。 */
-    if (items.length) items[0].classList.add("open");
+    /* 每项顶部插一个不可见标记，用来判断「哪一项最靠近视口中心」。
+       负 margin + 同值 padding 抵消，标记不占布局、不改变视觉。 */
+    var marks = items.map(function (li) {
+      var m = document.createElement("i");
+      m.className = "acc-mark";
+      m.setAttribute("aria-hidden", "true");
+      li.insertBefore(m, li.firstChild);
+      return m;
+    });
 
+    var current = -1;
+    var ticking = false;
+
+    /* 独占展开：滚到哪一项，就只展开那一项。
+       这样评委从上往下滚，每一项都会被强制摊开看一遍，
+       而不是停在一排名单上扫过去。
+       判定线放在视口 50%：条目顶部越过屏幕中线就算轮到了它，
+       往回滚时会退回上一项（判定线太低会让最后一项永远占着）。 */
+    function apply() {
+      ticking = false;
+      var line = window.innerHeight * 0.5;
+      var best = 0;
+      for (var i = 0; i < marks.length; i++) {
+        if (marks[i].getBoundingClientRect().top <= line) best = i;
+        else break;
+      }
+      if (best === current) return;
+      current = best;
+      items.forEach(function (li, i) {
+        li.classList.toggle("open", i === best);
+      });
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    }
+
+    /* 点标题条仍然可以手动开合；滚动接管时以下一次滚动为准 */
     items.forEach(function (li) {
       li.addEventListener("click", function (e) {
         if (e.target.closest("a")) return;
-        li.classList.toggle("open");
+        var wasOpen = li.classList.contains("open");
+        items.forEach(function (o) { o.classList.remove("open"); });
+        if (!wasOpen) {
+          li.classList.add("open");
+          current = items.indexOf(li);
+        } else {
+          current = -1;
+        }
       });
     });
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    apply();   /* 初始就展开第一项，评委一眼看到有内容 */
   }
 
   /* ---------- 结尾彩蛋 ----------
