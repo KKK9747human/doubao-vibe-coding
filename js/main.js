@@ -286,14 +286,21 @@
     });
   }
 
-  /* ---------- expandable track detail ---------- */
+  /* ---------- expandable track detail ----------
+     点击标题行展开/收起；详情区里的文字、链接不参与切换，
+     不然选中一段文字或点链接会顺手把面板关掉。
+     第一项默认展开，省得访客以为这摞只是静态列表。 */
   function accordion() {
-    document.querySelectorAll(".tracks li").forEach(function (li) {
-      li.addEventListener("click", function (e) {
+    var items = document.querySelectorAll(".tracks li");
+    items.forEach(function (li) {
+      var head = li.querySelector(".t-head");
+      if (!head) return;
+      head.addEventListener("click", function (e) {
         if (e.target.closest("a")) return;
         li.classList.toggle("open");
       });
     });
+    if (items[0]) items[0].classList.add("open");
   }
 
   /* ---------- 结尾彩蛋 ----------
@@ -308,13 +315,66 @@
      低通快速下滑抹掉锯齿声，配一段短促的拨片噪声瞬态。
      AudioContext 懒创建（首次出声时），避免自动播放策略拦截。
      指板单音、和弦卡、音游命中音都走它。 */
+  /* ---------- 全站共用音频总线 ----------
+     页面合成器、音游命中音、音游那首歌都汇进同一条 bus，
+     末端串一个 AnalyserNode：音游 HUD 里 V 头像外圈的线条从这儿取频谱。
+     只有一个 AudioContext，避免多份上下文各自为政、也省下重复的音频线程。 */
+  var AUDIO_BUS = (function () {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var ctx = null, master = null, analyser = null, bins = null;
+
+    function ensure() {
+      if (!AC) return null;
+      if (!ctx) {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 1;
+        analyser = ctx.createAnalyser();
+        /* 256 点只有 172Hz 一格，鼓和贝斯全挤在头两格里；1024 点是 43Hz 一格 */
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.72;
+        /* 默认 -100/-30dB 对着满电平的音乐几乎全在 255 上削平，
+           窗口往上提到 -14dB，各频段才留得住层次 */
+        analyser.minDecibels = -95;
+        analyser.maxDecibels = -14;
+        master.connect(analyser);
+        analyser.connect(ctx.destination);
+        bins = new Uint8Array(analyser.frequencyBinCount);
+      }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
+
+    return {
+      ensure: ensure,
+      node: function () { return master; },
+      spectrum: function () {
+        if (!analyser) return null;
+        analyser.getByteFrequencyData(bins);
+        return bins;
+      }
+    };
+  })();
+
+  /* 音频上下文要在用户手势里唤醒；挂一次性的全局监听兜住，
+     否则首次点击落在别的元素上时整条 bus 会一直 suspend，声音就没了。 */
+  (function () {
+    function wake() {
+      AUDIO_BUS.ensure();
+      document.removeEventListener("pointerdown", wake, true);
+      document.removeEventListener("keydown", wake, true);
+    }
+    document.addEventListener("pointerdown", wake, true);
+    document.addEventListener("keydown", wake, true);
+  })();
+
   function makeSynth() {
     var AC = window.AudioContext || window.webkitAudioContext;
     var ctx = null;
 
     function ensure() {
       if (!AC) return null;
-      if (!ctx) ctx = new AC();
+      if (!ctx) ctx = AUDIO_BUS.ensure();
       if (ctx.state === "suspended") ctx.resume();
       return ctx;
     }
@@ -341,7 +401,7 @@
       env.gain.linearRampToValueAtTime(0.2 * vol, t + 0.005);
       env.gain.exponentialRampToValueAtTime(0.0001, t + lenDur);
 
-      lp.connect(hp); hp.connect(env); env.connect(c.destination);
+      lp.connect(hp); hp.connect(env); env.connect(AUDIO_BUS.node());
 
       function voice(type, f, g, det) {
         var o = c.createOscillator();
@@ -886,8 +946,11 @@
     }
 
     /* ---------- 几何与精灵 ---------- */
-    var geo = { w: 0, h: 0, dpr: 1, laneW: 0, judgeY: 0, noteH: 22 };
+    var geo = { w: 0, h: 0, dpr: 1, laneW: 0, judgeY: 0, noteH: 22, avW: 0, avH: 0 };
     var sprites = null, quality = 2; /* 2 高 1 中 0 低 */
+    /* HUD 里 V 头像那圈频谱线 */
+    var avCvs = $("nfAvRing"), avCtx = avCvs ? avCvs.getContext("2d") : null;
+    var AV_BARS = 48, avRIn = 40, avSpan = 20;
     var PALETTE = {
       kick: ["#ff2a5f", "255,42,95"],
       snare: ["#ff8a3d", "255,138,61"],
@@ -907,6 +970,16 @@
       cvs.style.width = geo.w + "px";
       cvs.style.height = geo.h + "px";
       c2.setTransform(geo.dpr, 0, 0, geo.dpr, 0, 0);
+      if (avCvs && avCtx) {
+        var ar = avCvs.getBoundingClientRect();
+        geo.avW = Math.max(48, Math.round(ar.width));
+        geo.avH = Math.max(48, Math.round(ar.height));
+        avCvs.width = Math.round(geo.avW * geo.dpr);
+        avCvs.height = Math.round(geo.avH * geo.dpr);
+        avCtx.setTransform(geo.dpr, 0, 0, geo.dpr, 0, 0);
+        avRIn = 40;
+        avSpan = Math.max(8, Math.min(geo.avW, geo.avH) / 2 - avRIn - 3);
+      }
       geo.laneW = geo.w / LANES;
       geo.judgeY = geo.h * JUDGE_RATIO;
       /* 音符高度按「同轨最小间距」反推：十六分连打必须看得清 */
@@ -982,7 +1055,7 @@
     }
 
     /* ---------- 运行状态 ---------- */
-    var audio = null, raf = 0, running = false, paused = false, ending = false, locked = false;
+    var audio = null, songSrc = null, raf = 0, running = false, paused = false, ending = false, locked = false;
     var st = null;
     var sparks = [], rings = [], sparkPool = [];
     var MAX_SPARK = [40, 120, 260];
@@ -993,12 +1066,11 @@
 
     function ensureSfx() {
       if (!audioCtx) {
-        var AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return null;
-        audioCtx = new AC();
+        audioCtx = AUDIO_BUS.ensure();
+        if (!audioCtx) return null;
         sfxGain = audioCtx.createGain();
         sfxGain.gain.value = 0.32;
-        sfxGain.connect(audioCtx.destination);
+        sfxGain.connect(AUDIO_BUS.node());
       }
       if (audioCtx.state === "suspended") audioCtx.resume();
       return audioCtx;
@@ -1126,6 +1198,15 @@
       audio.src = AUDIO_SRC;
       audio.preload = "auto";
       audio.addEventListener("ended", function () { ending = true; });
+      /* 把这首歌也接到共用 bus 上，头像外圈才能跟着唱。
+         接不上（老浏览器 / 已经接过）就照常直接播，不影响出声。 */
+      var busCtx = AUDIO_BUS.ensure();
+      if (busCtx) {
+        try {
+          songSrc = busCtx.createMediaElementSource(audio);
+          songSrc.connect(AUDIO_BUS.node());
+        } catch (e) { /* 走默认输出 */ }
+      }
     }
 
     function closeRun() {
@@ -1138,6 +1219,10 @@
         audio.load();
       }
       audio = null;
+      if (songSrc) {
+        try { songSrc.disconnect(); } catch (e) {}
+        songSrc = null;
+      }
       st = null;
       sparks.length = 0;
       rings.length = 0;
@@ -1334,6 +1419,47 @@
 
       refreshHud(t);
       refreshLyric(t);
+      drawAvRing(t);
+    }
+
+    /* 头像外圈：一圈竖线按频谱伸出去，没有声音时缩成一层呼吸的细边 */
+    function drawAvRing(t) {
+      if (!avCtx || !geo.avW) return;
+      var w = geo.avW, h = geo.avH, cx = w / 2, cy = h / 2, i;
+      var sp = AUDIO_BUS.spectrum();
+      avCtx.clearRect(0, 0, w, h);
+
+      avCtx.lineWidth = 1;
+      avCtx.strokeStyle = "rgba(0,229,255,.20)";
+      avCtx.beginPath();
+      avCtx.arc(cx, cy, avRIn, 0, Math.PI * 2);
+      avCtx.stroke();
+
+      avCtx.lineCap = "round";
+      for (i = 0; i < AV_BARS; i++) {
+        var a = (i / AV_BARS) * Math.PI * 2 - Math.PI / 2;
+        var v = 0;
+        if (sp) {
+          /* 对数取点：约 43Hz 一格，从 65Hz 铺到 15kHz，
+             低音占的格子少、中高频才看得见细节，48 根线一格格对上 */
+          var bi = Math.round(Math.exp(Math.log(1.5) + (i / AV_BARS) * (Math.log(360) - Math.log(1.5))));
+          v = (sp[bi] || 0) / 255;
+          /* 抠掉分析器的底噪，不然安静频段也顶着半根线 */
+          v = v > 0.34 ? (v - 0.34) / 0.66 : 0;
+        }
+        var idle = 0.06 + 0.035 * Math.sin(t * 2.1 + i * 0.42);
+        var len = 2 + Math.max(idle, Math.pow(v, 1.25)) * avSpan;
+        var ca = Math.cos(a), sa = Math.sin(a);
+        var hot = v > 0.62;
+        avCtx.strokeStyle = hot
+          ? "rgba(255,42,95," + (0.42 + v * 0.55).toFixed(3) + ")"
+          : "rgba(0,229,255," + (0.20 + v * 0.72).toFixed(3) + ")";
+        avCtx.lineWidth = hot ? 2.2 : 1.4;
+        avCtx.beginPath();
+        avCtx.moveTo(cx + ca * avRIn, cy + sa * avRIn);
+        avCtx.lineTo(cx + ca * (avRIn + len), cy + sa * (avRIn + len));
+        avCtx.stroke();
+      }
     }
 
     function spawnSparks(x, amount) {

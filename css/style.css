@@ -749,7 +749,9 @@ html.js .screen.on.curtain .wipe{
 .bgloop{
   position:fixed;inset:0;z-index:1;pointer-events:none;
   width:100%;height:100%;object-fit:cover;
-  filter:hue-rotate(160deg) saturate(1.5) contrast(1.06) brightness(.9);
+  /* 底图本身是品红色霓虹，160deg 会转成绿色；210deg 落在天蓝色，
+     和全站的青/红调子接得上。 */
+  filter:hue-rotate(210deg) saturate(1.35) contrast(1.06) brightness(.92);
   opacity:.85;
   transition:opacity .7s var(--ease),visibility .7s;
   visibility:hidden;opacity:0;
@@ -866,8 +868,11 @@ html.nf-open{overflow:hidden}
 .nf-title{font-family:var(--tech);font-weight:900;font-size:1.35rem;letter-spacing:.24em;color:var(--paper);text-shadow:0 0 18px rgba(255,42,95,.55)}
 .nf-title em{font-style:normal;color:var(--red)}
 .nf-side{font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:var(--cyan);white-space:nowrap}
-.nf-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 220px}
-.nf-arena{position:relative;min-height:420px;overflow:hidden;border-right:1px solid var(--line)}
+.nf-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 220px;min-height:0}
+/* min-height:0 是必须的：默认 grid 行不会小于内容的 min-content，
+   HUD 一长就把 arena 一起撑高，判定线（arena 的 78%）会被 .nf-box 的
+   overflow:hidden 裁到可视区外 —— 表现就是「游戏里看不到判定线」。 */
+.nf-arena{position:relative;min-height:0;overflow:hidden;border-right:1px solid var(--line)}
 /* 下落音符画布：铺满 arena，压在轨道虚线之上、判定线与歌词之下。
    HTML 里原本缺这个 canvas，JS 裸调用 getContext 直接抛异常，
    整个 nfGame 初始化中断 —— 这就是「点音游没反应」的根因。 */
@@ -924,6 +929,7 @@ html.nf-open{overflow:hidden}
 .nf-hud{
   padding:18px 18px;display:flex;flex-direction:column;gap:12px;
   font-family:var(--mono);border-left:1px solid rgba(0,229,255,.08);
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
 }
 .nf-score-title,.nf-acc-title,.nf-stat{display:flex;justify-content:space-between;font-size:.6rem;letter-spacing:.26em;color:var(--paper-dim)}
 .nf-score{font-size:2rem;font-weight:600;color:var(--paper);letter-spacing:.04em;font-variant-numeric:tabular-nums}
@@ -932,6 +938,23 @@ html.nf-open{overflow:hidden}
 .nf-stat b{color:var(--paper);font-weight:600;font-variant-numeric:tabular-nums}
 .nf-stat b.red{color:var(--red)}
 .nf-hud .nf-how{font-family:var(--serif);font-size:.78rem;line-height:1.9;color:var(--paper-dim);margin-top:auto;letter-spacing:.04em}
+
+/* HUD 顶部的 V 头像：外圈线条由 canvas 按音频频谱实时画出来 */
+.nf-av{position:relative;width:128px;height:128px;flex:none;margin:2px auto 6px}
+.nf-av-pic{
+  position:absolute;left:50%;top:50%;width:76px;height:76px;transform:translate(-50%,-50%);
+  border-radius:50%;object-fit:cover;
+  border:2px solid var(--red);filter:saturate(.92) contrast(1.06);
+  box-shadow:0 0 20px rgba(255,42,95,.45),0 0 0 3px rgba(255,42,95,.12);
+}
+.nf-av-ring{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none}
+.nf-av-tag{
+  position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  font-family:var(--tech);font-weight:900;font-size:.6rem;line-height:1.5;
+  padding:0 5px 0 8px;letter-spacing:.24em;text-indent:.24em;
+  color:var(--cyan);text-shadow:0 0 10px rgba(0,229,255,.85);
+  background:rgba(4,6,14,.88);border:1px solid rgba(0,229,255,.35);
+}
 
 .nf-menu,.nf-result{
   position:absolute;inset:0;z-index:20;

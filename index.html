@@ -7,13 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=Orbitron:wght@600;900&family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <!-- 背景是两段预渲染的无缝循环动图：
        #bgwall 字符乱码墙 —— 全页氛围，在最底层
        #bgloop 线框城市   —— 只在首屏可见，压在字符墙之上
-     赛博朋克调色：城市加了青色调，字符墙偏夜红。 -->
+     赛博朋克调色：城市转成天蓝色，字符墙偏夜红。 -->
 <img id="bgwall" class="bgwall" src="video/wall-loop.webp" alt="" aria-hidden="true">
 <img id="bgloop" class="bgloop" src="video/bg-loop.webp" alt="" aria-hidden="true">
 <div class="bg-scrim" aria-hidden="true"></div>
@@ -69,7 +69,7 @@
   </div>
   <div class="prose" data-reveal>
     <p>了解一个人，莫过于看他<em>做过什么</em>。那就不急着自我介绍了，下面这些才算数。</p>
-    <p>这几样是我在 <em>E:\code</em> 里真刀真枪做出来的：有写着玩的，有认真挖了几个小时坑的。每一样都教会我一件事。</p>
+    <p>这几样都是在 <em>E:\code</em> 里一个个做出来的，有写着玩的，也有认真挖了几个小时的。</p>
   </div>
   <div class="tracks" data-reveal>
     <p class="block-label">项目档案<span class="hint">· 点名称展开详情</span></p>
@@ -88,7 +88,7 @@
           <span class="t-no">02</span><b>AskTrace · 可审计的自然语言查库智能体</b><i>FastAPI · DuckDB · sqlglot</i><span class="t-t">2026<span class="caret">+</span></span>
         </div>
         <div class="t-detail">
-          <span class="td-ph">截图待补</span>
+          <img class="no-filter" src="img/asktrace.webp" alt="AskTrace 系统架构总图" loading="lazy">
           <div class="td-text"><p>把业务问题变成取数答案。流程是：检索相关的表，让大模型写出只读 SQL，做语法校验并限制行数，再执行。每一步都留 trace，答错了能查到是哪一步出的问题。</p><p>检索这块做了三级漏斗，先用词法召回一批候选表，让大模型精排，最后沿着外键把关联表一起带进来。SQL 安全上了两道锁：sqlglot 做 AST 只读校验并注入 LIMIT，DuckDB 本身也用只读方式打开。答不出来的时候会明确反问，分清是"没找到合适的表"还是"问题太含糊"，不会硬猜一个结果给你。</p><p>后端垂直切片已经跑通，约 73 个测试用例。TypeScript 编排层和前端还没做。</p></div>
         </div>
       </li>
@@ -336,7 +336,7 @@
 
   </div>
   <div class="quote" data-reveal>
-    <blockquote>好看的背面是耐心，耐心的背面是真心。</blockquote>
+    <blockquote>好看不是一眼的事，是看很多眼、改很多遍。</blockquote>
     <cite>—— 豆包 · 审美是个动词</cite>
   </div>
 </section>
@@ -349,7 +349,7 @@
     <span class="chap-en">TO THE CLUB</span>
   </div>
   <div class="essay" data-reveal>
-    <p>我想加入 vibe coding 社团，不是为了会说一句「我会写网页」，而是想和一群愿意为细节较劲的人待在一起。</p>
+    <p>我想加入 vibe coding 社团。多会一门手艺当然好，但更想找一群人，一起为细节较劲。</p>
     <cite>—— 徐湛（豆包） · 入社申请 · 第一稿</cite>
   </div>
   <div class="prose" data-reveal data-delay="1">
@@ -380,8 +380,8 @@
   <div class="gear" data-reveal>
     <div class="gear-item">
       <span class="g-ico">🎸</span>
-      <b>主力琴</b><span class="g-role">电吉他 · 六弦</span>
-      <p>一把入门电吉他，失真一开就是整个夜之城的底噪。</p>
+      <b>主力琴</b><span class="g-role">Epiphone Les Paul Standard 60s</span>
+      <p>手边的琴是 Epiphone 的 Les Paul Standard 60s，失真一开就是整个夜之城的底噪。</p>
     </div>
     <div class="gear-item">
       <span class="g-ico">🎚️</span>
@@ -452,7 +452,7 @@
     <p class="eg-thanks">感谢你看到这里。</p>
     <p>前面几页都是正经东西，项目、技能、书影音。既然你都翻到底了，就把藏在这儿的最后一件也说了：上面这位是<em>强尼·银手</em>。赛博朋克 2077 里那个抱着吉他跟全世界叫板的家伙，也是这家站从头到尾的底色。</p>
     <p>顺便把彩蛋都指出来：上面的<em>♪ NEVER FADE AWAY</em> 按钮点开是个小音游，四轨下落、有判定和结算；谱面不是手写的，是现场分析这首歌的鼓点生成的。吉他页的指板点得响，和弦卡能试听。武侍乐队那首《Never Fade Away》，歌名就印在他旁边那把琴上。</p>
-    <p class="eg-last">愿意翻到最后的人，才找得到藏在最底下的东西。</p>
+    <p class="eg-last">都藏得挺浅，就看你有没有翻到最后。</p>
   </div>
 </section>
 <!-- =====================================================================
@@ -484,6 +484,11 @@
         <div class="nf-prog"><i id="nfProg"></i></div>
       </div>
       <div class="nf-hud">
+        <div class="nf-av" id="nfAv">
+          <canvas class="nf-av-ring" id="nfAvRing" aria-hidden="true"></canvas>
+          <img class="nf-av-pic" src="img/v-avatar.jpg" alt="V 头像">
+          <span class="nf-av-tag" aria-hidden="true">V</span>
+        </div>
         <div class="nf-score-title">SCORE</div>
         <div class="nf-score" id="nfScore">0</div>
         <div class="nf-combo" id="nfCombo">0<small style="font-size:.6rem;color:var(--paper-dim)"> COMBO</small></div>
@@ -540,6 +545,6 @@
     <button class="nf-close" id="nfClose" type="button" title="关闭">✕</button>
   </div>
 </div>
-<script src="js/main.js?v=22" defer></script>
+<script src="js/main.js?v=28" defer></script>
 </body>
 </html>
