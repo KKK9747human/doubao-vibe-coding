@@ -1706,11 +1706,14 @@
       if (li >= 0) laneHold[li] = 0;
     });
 
-    /* 触屏/鼠标：直接点轨道打 */
-    cvs.addEventListener("pointerdown", function (e) {
-      if (!running) return;
-      var r = cvs.getBoundingClientRect();
-      var lane = clamp(Math.floor((e.clientX - r.left) / geo.laneW), 0, LANES - 1);
+    /* 触屏/鼠标：直接点轨道打。监听挂在 arena 上而不是 canvas ——
+       canvas 是 pointer-events:none（它只是一层贴图），事件永远到不了它，
+       之前手机上怎么点都没反应就是这个原因。挂在 arena 上，子元素的事件会冒泡上来。 */
+    elCache.arena.addEventListener("pointerdown", function (e) {
+      if (!running || e.button > 0) return;
+      if (e.target && e.target.closest && e.target.closest("button")) return;
+      var r = elCache.arena.getBoundingClientRect();
+      var lane = clamp(Math.floor((e.clientX - r.left) / (r.width / LANES)), 0, LANES - 1);
       hit(lane);
       laneHold[lane] = 1;
       e.preventDefault();
