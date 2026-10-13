@@ -984,8 +984,9 @@
       var r = elCache.arena.getBoundingClientRect();
       geo.w = Math.max(120, Math.round(r.width));
       geo.h = Math.max(200, Math.round(r.height));
-      /* 2× DPR 在 1440p 屏上就是四倍像素要填，先保帧数：1.75× 看不出来 */
-      geo.dpr = clamp(window.devicePixelRatio || 1, 1, quality >= 2 ? 1.75 : 1.25);
+      /* 填充率是音游最大的开销：2× DPR 在 1440p 屏上就是四倍像素要填。
+         分级封顶，画质档位由上面的自适应逻辑决定，保 60 优先。 */
+      geo.dpr = clamp(window.devicePixelRatio || 1, 1, quality >= 2 ? 1.5 : quality >= 1 ? 1.25 : 1);
       cvs.width = Math.round(geo.w * geo.dpr);
       cvs.height = Math.round(geo.h * geo.dpr);
       cvs.style.width = geo.w + "px";
@@ -1088,7 +1089,8 @@
     var audio = null, songSrc = null, raf = 0, running = false, paused = false, ending = false, locked = false;
     var st = null;
     var sparks = [], rings = [], sparkPool = [];
-    var MAX_SPARK = [40, 120, 260];
+    /* 加色混合的粒子最吃填充率，密度也按画质档位封顶 */
+    var MAX_SPARK = [30, 90, 190];
     var laneHold = [0, 0, 0, 0];
     /* 打击感三件套：整屏抖动、轨道冲击条、全屏闪白。都是几帧就退的短命状态 */
     var impactBars = [], shakeMag = 0, flashT = 0, flashCol = "0,229,255";
@@ -1326,10 +1328,11 @@
       lastFrame = now;
       if (dt > 0 && dt < 200 && !document.hidden) {
         st.dtAvg = st.dtAvg * 0.9 + dt * 0.1;
-        /* 自适应画质：连续掉帧就降 DPR 与粒子，卡顿不留给手感。
+        /* 自适应画质：目标就是 60，掉到 57 以下就算没跑满，降 DPR 和粒子直到跑满。
+           以前门槛设在 44，等于 45fps 就判「达标」，机器能跑 50 就永远停在 50。
            后台标签页的 rAF 节流不算掉帧，否则切回来画质就永久低了。 */
-        if (1000 / st.dtAvg < 44) st.slow++; else st.slow = 0;
-        if (st.slow > 45 && quality > 0 && now - st.degradeAt > 3000) {
+        if (1000 / st.dtAvg < 57) st.slow++; else st.slow = 0;
+        if (st.slow > 24 && quality > 0 && now - st.degradeAt > 1200) {
           st.degradeAt = now;
           st.slow = 0;
           quality--;

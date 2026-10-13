@@ -765,6 +765,16 @@ html.on-hero .bgloop{visibility:visible;opacity:.85}
     rgba(0,0,0,.30) 0%, rgba(0,0,0,.62) 22%, rgba(0,0,0,.92) 44%,
     #000 62%, #000 100%);
 }
+/* 音游叠层打开时，把两段循环动图（十几 MB 的动画 WebP）真正停掉。
+   pauseBg() 只 pause 了 <video>，可这两个是 <img>，一直在满屏解码，
+   帧预算被它吃掉一大块；display:none 之后浏览器才会挂起图集动画。 */
+html.nf-open .bgwall,
+html.nf-open .bgloop{display:none}
+/* 页面上的装饰动画也一并停掉：scanlines 是满屏 mix-blend-mode、一直在动，
+   合成器每帧都要跟背后的画面重算一次混色。叠层内部的动画（判定反馈那些）照跑。 */
+html.nf-open body *{animation-play-state:paused}
+html.nf-open .nf-overlay,
+html.nf-open .nf-overlay *{animation-play-state:running}
 .bg-scrim{
   position:fixed;inset:0;pointer-events:none;
   background:
